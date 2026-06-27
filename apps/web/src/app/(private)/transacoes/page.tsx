@@ -3,11 +3,11 @@ import { ArrowDownRight, ArrowUpRight, Search, SlidersHorizontal } from "lucide-
 import { PageHeading } from "@/components/page-heading";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/server/services/auth/session-service";
-import { getDashboardSnapshot } from "@/server/services/reports/dashboard-service";
+import { getTransactionsForUser } from "@/server/services/reports/dashboard-service";
 
 export default async function TransactionsPage() {
   const user = await requireUser();
-  const data = await getDashboardSnapshot(user.id);
+  const transactions = await getTransactionsForUser(user.id);
   return (
     <>
       <PageHeading
@@ -34,9 +34,9 @@ export default async function TransactionsPage() {
               <SlidersHorizontal className="size-4" /> Filtros
             </button>
           </div>
-          {data.recent.length ? (
+          {transactions.length ? (
             <div className="divide-y">
-              {data.recent.map((transaction) => (
+              {transactions.map((transaction) => (
                 <div
                   key={transaction.id}
                   className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 sm:grid-cols-[auto_1fr_140px_120px]"

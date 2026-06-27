@@ -77,3 +77,15 @@ export async function getDashboardSnapshot(userId: string) {
     }),
   };
 }
+
+export async function getTransactionsForUser(userId: string) {
+  const memberships = await getUserWorkspaces(userId);
+  const workspaceIds = memberships.map(({ workspace }) => workspace.id);
+  if (!workspaceIds.length) return [];
+
+  return getDb().query.transactions.findMany({
+    where: (transaction, { inArray }) => inArray(transaction.workspaceId, workspaceIds),
+    orderBy: (transaction, { desc }) => [desc(transaction.occurredAt)],
+    limit: 500,
+  });
+}
