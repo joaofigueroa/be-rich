@@ -46,6 +46,16 @@ export function ImportWizard({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
+
+  function resetImport() {
+    setPreview(null);
+    setSelectedFile(null);
+    setIsDragging(false);
+    setError("");
+    setState("idle");
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   async function parse(form: FormData) {
     if (!selectedFile) {
       setError("Selecione ou arraste um arquivo para preparar a revisão.");
@@ -106,6 +116,9 @@ export function ImportWizard({
         <p className="mt-2 text-sm text-muted-foreground">
           A normalização e deduplicação seguem em um Workflow durável. Você pode sair desta página.
         </p>
+        <Button type="button" className="mt-5" onClick={resetImport}>
+          <UploadCloud className="size-4" /> Fazer nova importação
+        </Button>
       </div>
     );
   if (preview && (state === "review" || state === "confirming" || state === "error"))
@@ -116,11 +129,7 @@ export function ImportWizard({
         confirming={state === "confirming"}
         error={error}
         onConfirm={confirm}
-        onBack={() => {
-          setPreview(null);
-          setSelectedFile(null);
-          setState("idle");
-        }}
+        onBack={resetImport}
       />
     );
   return (
