@@ -1,15 +1,23 @@
 import { Button } from "@be-rich/ui/button";
 import { Card, CardContent } from "@be-rich/ui/card";
-import { ArrowDownRight, ArrowUpRight, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { reprocessCategoriesAction } from "@/app/classification-actions";
 import { PageHeading } from "@/components/page-heading";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { TransactionList } from "@/components/transaction-list";
 import { requireUser } from "@/server/services/auth/session-service";
-import { getTransactionsForUser } from "@/server/services/reports/dashboard-service";
+import { getTransactionsPageForUser } from "@/server/services/transactions/transaction-service";
 
-export default async function TransactionsPage() {
+type TransactionsPageProps = {
+  searchParams: Promise<{ page?: string }>;
+};
+
+export default async function TransactionsPage({ searchParams }: TransactionsPageProps) {
   const user = await requireUser();
-  const transactions = await getTransactionsForUser(user.id);
+  const params = await searchParams;
+  const data = await getTransactionsPageForUser({ userId: user.id, page: params.page ?? 1 });
+  const firstItem = data.total ? (data.page - 1) * data.pageSize + 1 : 0;
+  const lastItem = Math.min(data.page * data.pageSize, data.total);
   return (
     <>
       <PageHeading
@@ -43,44 +51,8 @@ export default async function TransactionsPage() {
               <SlidersHorizontal className="size-4" /> Filtros
             </button>
           </div>
-          {transactions.length ? (
-            <div className="divide-y">
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 sm:grid-cols-[auto_1fr_140px_120px]"
-                >
-                  <span
-                    className={`grid size-9 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}
-                  >
-                    {transaction.direction === "CREDIT" ? (
-                      <ArrowUpRight className="size-4" />
-                    ) : (
-                      <ArrowDownRight className="size-4" />
-                    )}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {transaction.category ??
-                        (["CONSUMPTION", "INCOME"].includes(transaction.nature)
-                          ? "Categoria pendente"
-                          : "Categoria não aplicável")}
-                      {transaction.reviewStatus === "PENDING" && transaction.category
-                        ? " · revisar sugestão"
-                        : ""}
-                    </p>
-                  </div>
-                  <p className="hidden text-sm text-muted-foreground sm:block">
-                    {formatDate(transaction.occurredAt)}
-                  </p>
-                  <p className="tabular text-right text-sm font-semibold">
-                    {transaction.direction === "DEBIT" ? "−" : "+"}
-                    {formatCurrency(transaction.amountInBase)}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {data.transactions.length ? (
+            <TransactionList transactions={data.transactions} categories={data.categories} />
           ) : (
             <div className="grid min-h-80 place-items-center p-8 text-center">
               <div>
@@ -91,6 +63,43 @@ export default async function TransactionsPage() {
               </div>
             </div>
           )}
+          {data.total > 0 ? (
+            <nav
+              aria-label="Paginação de transações"
+              className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p className="text-sm text-muted-foreground">
+                Exibindo {firstItem}–{lastItem} de {data.total}
+              </p>
+              <div className="flex items-center gap-2">
+                {data.page > 1 ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/transacoes?page=${data.page - 1}`}>
+                      <ChevronLeft className="size-4" /> Anterior
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" disabled>
+                    <ChevronLeft className="size-4" /> Anterior
+                  </Button>
+                )}
+                <span className="min-w-20 text-center text-sm tabular-nums">
+                  {data.page} de {data.totalPages}
+                </span>
+                {data.page < data.totalPages ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/transacoes?page=${data.page + 1}`}>
+                      Próxima <ChevronRight className="size-4" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" disabled>
+                    Próxima <ChevronRight className="size-4" />
+                  </Button>
+                )}
+              </div>
+            </nav>
+          ) : null}
         </CardContent>
       </Card>
     </>

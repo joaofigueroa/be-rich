@@ -1,0 +1,20 @@
+export const TRANSACTION_NATURES = [
+  "INCOME",
+  "CONSUMPTION",
+  "OWN_TRANSFER",
+  "CARD_PAYMENT",
+  "INVESTMENT_CONTRIBUTION",
+  "INVESTMENT_REDEMPTION",
+  "DEBT_PRINCIPAL",
+  "INTEREST_FEE",
+  "REFUND",
+  "ADJUSTMENT",
+] as const;
+
+export type TransactionNature = (typeof TRANSACTION_NATURES)[number];
+
+export function categoryTypeForNature(nature: TransactionNature) {
+  if (nature === "INCOME") return "INCOME" as const;
+  if (nature === "CONSUMPTION") return "EXPENSE" as const;
+  return null;
+}

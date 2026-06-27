@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, eq, getDb, inArray, schema } from "@be-rich/database";
+import { desc, getDb, inArray, schema } from "@be-rich/database";
 import { subDays } from "date-fns";
 import { calculateNetWorth, calculateReportTotals } from "@/server/domain/financial-calculator";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
@@ -86,28 +86,4 @@ export async function getDashboardSnapshot(userId: string) {
     }),
     netWorthComplete: accounts.every((account) => latestBalances.has(account.id)),
   };
-}
-
-export async function getTransactionsForUser(userId: string) {
-  const memberships = await getUserWorkspaces(userId);
-  const workspaceIds = memberships.map(({ workspace }) => workspace.id);
-  if (!workspaceIds.length) return [];
-
-  return getDb()
-    .select({
-      id: schema.transactions.id,
-      description: schema.transactions.description,
-      direction: schema.transactions.direction,
-      nature: schema.transactions.nature,
-      amountInBase: schema.transactions.amountInBase,
-      occurredAt: schema.transactions.occurredAt,
-      category: schema.categories.name,
-      classificationSource: schema.transactions.classificationSource,
-      reviewStatus: schema.transactions.reviewStatus,
-    })
-    .from(schema.transactions)
-    .leftJoin(schema.categories, eq(schema.transactions.categoryId, schema.categories.id))
-    .where(inArray(schema.transactions.workspaceId, workspaceIds))
-    .orderBy(desc(schema.transactions.occurredAt))
-    .limit(500);
 }
