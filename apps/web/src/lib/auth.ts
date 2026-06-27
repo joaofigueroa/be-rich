@@ -3,16 +3,18 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins";
+import { resolveAuthSecret } from "@/lib/auth-secret";
 import { sendMagicLinkEmail } from "@/lib/email";
+import { loadRuntimeEnv } from "@/lib/runtime-env";
 import { ensurePersonalWorkspace } from "@/server/services/workspaces/workspace-service";
 
+loadRuntimeEnv();
+
 function createAuth() {
-  const secret = process.env.BETTER_AUTH_SECRET;
-  if (!secret) {
-    throw new Error(
-      "BETTER_AUTH_SECRET is required. Add it to the monorepo .env.local and restart the server.",
-    );
-  }
+  const secret = resolveAuthSecret({
+    secret: process.env.BETTER_AUTH_SECRET,
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
