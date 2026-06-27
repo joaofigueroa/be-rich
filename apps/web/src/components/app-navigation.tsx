@@ -46,7 +46,7 @@ export function AppNavigation() {
         />
       ) : null}
       <nav
-        className={`fixed inset-y-0 left-0 z-50 w-72 border-r bg-background p-4 transition-transform lg:static lg:z-auto lg:w-auto lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 h-svh w-72 max-w-[calc(100vw-2rem)] border-r bg-card p-4 shadow-2xl transition-transform lg:static lg:z-auto lg:h-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Seções do aplicativo"
       >
         <div className="mb-5 flex justify-end lg:hidden">

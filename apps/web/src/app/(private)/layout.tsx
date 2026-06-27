@@ -26,7 +26,7 @@ export default async function PrivateLayout({ children }: { children: React.Reac
           </div>
         </div>
       </aside>
-      <div className="min-w-0">
+      <div className="min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:px-8">
           <div className="flex items-center gap-3">
             <div className="lg:hidden">
@@ -50,7 +50,7 @@ export default async function PrivateLayout({ children }: { children: React.Reac
             </span>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1500px] min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

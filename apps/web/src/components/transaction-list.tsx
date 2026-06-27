@@ -150,10 +150,10 @@ export function TransactionList({ transactions, categories, bills }: Transaction
             type="button"
             key={transaction.id}
             onClick={() => openEditor(transaction)}
-            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_1fr_140px_120px]"
+            className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_140px_120px] sm:items-center"
           >
             <span
-              className={`grid size-9 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}
+              className={`grid size-9 shrink-0 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}
             >
               {transaction.direction === "CREDIT" ? (
                 <ArrowUpRight className="size-4" />
@@ -163,7 +163,7 @@ export function TransactionList({ transactions, categories, bills }: Transaction
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium">{transaction.description}</span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="block truncate text-xs text-muted-foreground">
                 {transaction.category ??
                   (["CONSUMPTION", "INCOME"].includes(transaction.nature)
                     ? "Categoria pendente"
@@ -185,7 +185,7 @@ export function TransactionList({ transactions, categories, bills }: Transaction
             <span className="hidden text-sm text-muted-foreground sm:block">
               {formatDate(transaction.occurredAt)}
             </span>
-            <span className="tabular text-right text-sm font-semibold">
+            <span className="tabular col-start-2 text-left text-sm font-semibold sm:col-auto sm:text-right">
               {transaction.direction === "DEBIT" ? "−" : "+"}
               {formatCurrency(transaction.amountInBase)}
             </span>
@@ -194,7 +194,7 @@ export function TransactionList({ transactions, categories, bills }: Transaction
       </div>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Revisar transação</DialogTitle>
             <DialogDescription>

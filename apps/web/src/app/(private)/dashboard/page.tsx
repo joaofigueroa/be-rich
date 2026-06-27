@@ -21,18 +21,20 @@ export default async function DashboardPage() {
   const hasData = data.accounts.length > 0 || data.recent.length > 0;
   return (
     <>
-      <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
+      <div className="mb-7 flex min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div className="min-w-0">
           <p className="text-sm text-muted-foreground">Boa gestão, {user.name.split(" ")[0]}.</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em]">Sua vida financeira</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">
+            Sua vida financeira
+          </h1>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/planejamento">
               <Plus className="size-4" /> Nova meta
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/importar">
               <Upload className="size-4" /> Importar extrato
             </Link>
@@ -64,15 +66,15 @@ export default async function DashboardPage() {
         />
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <div>
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle>Movimentações recentes</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 Compras na ocorrência; caixa no lançamento.
               </p>
             </div>
-            <Button asChild size="sm" variant="ghost">
+            <Button asChild size="sm" variant="ghost" className="w-full sm:w-auto">
               <Link href="/transacoes">Ver todas</Link>
             </Button>
           </CardHeader>
@@ -80,9 +82,12 @@ export default async function DashboardPage() {
             {data.recent.length ? (
               <div className="divide-y">
                 {data.recent.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center gap-3 py-3">
+                  <div
+                    key={transaction.id}
+                    className="flex min-w-0 items-start gap-3 py-3 sm:items-center"
+                  >
                     <span
-                      className={`grid size-9 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}
+                      className={`grid size-9 shrink-0 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}
                     >
                       {transaction.direction === "CREDIT" ? (
                         <ArrowUpRight className="size-4" />
@@ -96,7 +101,7 @@ export default async function DashboardPage() {
                         {formatDate(transaction.occurredAt)}
                       </p>
                     </div>
-                    <span className="tabular text-sm font-semibold">
+                    <span className="tabular shrink-0 text-right text-sm font-semibold">
                       {transaction.direction === "DEBIT" ? "−" : "+"}
                       {formatCurrency(transaction.amountInBase)}
                     </span>
@@ -164,13 +169,15 @@ function MetricCard({
   return (
     <Card className={accent ? "border-emerald-600/25 bg-emerald-600/[0.045]" : ""}>
       <CardContent className="p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-start justify-between gap-3">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <span className="grid size-8 place-items-center rounded-lg bg-muted text-muted-foreground">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
             {icon}
           </span>
         </div>
-        <p className="tabular mt-5 text-2xl font-semibold tracking-tight">{value}</p>
+        <p className="tabular mt-5 break-words text-xl font-semibold tracking-tight sm:text-2xl">
+          {value}
+        </p>
       </CardContent>
     </Card>
   );
@@ -194,7 +201,7 @@ function Onboarding() {
           Você revisa tudo antes que qualquer lançamento entre no livro financeiro.
         </p>
       </div>
-      <Button asChild>
+      <Button asChild className="w-full sm:w-auto">
         <Link href="/importar">
           Começar <Upload className="size-4" />
         </Link>

@@ -99,9 +99,12 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
           </form>
         }
       />
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <nav aria-label="Visão das transações" className="flex gap-2 border-b p-4">
+          <nav
+            aria-label="Visão das transações"
+            className="flex gap-2 overflow-x-auto border-b p-4"
+          >
             {[
               ["ALL", "Consolidada"],
               ["ACCOUNT", "Conta"],
@@ -112,6 +115,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                 asChild
                 size="sm"
                 variant={view === value ? "secondary" : "ghost"}
+                className="shrink-0"
               >
                 <Link href={buildHref({ view: value, page: undefined })}>{label}</Link>
               </Button>
@@ -119,10 +123,13 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
           </nav>
           <form
             method="get"
-            className="grid gap-3 border-b p-4 md:grid-cols-2 xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.9fr_auto]"
+            className="grid gap-3 border-b p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.9fr_auto]"
           >
             {view !== "ALL" ? <input type="hidden" name="view" value={view} /> : null}
-            <label htmlFor="transaction-search" className="relative flex-1">
+            <label
+              htmlFor="transaction-search"
+              className="relative min-w-0 sm:col-span-2 lg:col-span-1"
+            >
               <span className="sr-only">Buscar transações</span>
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -135,21 +142,21 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             </label>
             <input
               aria-label="Data inicial"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               type="date"
               name="startDate"
               defaultValue={data.filters.startDate}
             />
             <input
               aria-label="Data final"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               type="date"
               name="endDate"
               defaultValue={data.filters.endDate}
             />
             <select
               aria-label="Conta"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               name="accountId"
               defaultValue={data.filters.accountId}
             >
@@ -162,7 +169,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             </select>
             <select
               aria-label="Instituição"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               name="institutionId"
               defaultValue={data.filters.institutionId}
             >
@@ -175,7 +182,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             </select>
             <select
               aria-label="Categoria"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               name="categoryId"
               defaultValue={data.filters.categoryId}
             >
@@ -188,7 +195,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             </select>
             <select
               aria-label="Status de revisão"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm"
               name="reviewStatus"
               defaultValue={data.filters.reviewStatus}
             >
@@ -197,11 +204,11 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
               <option value="CONFIRMED">Confirmadas</option>
               <option value="NOT_REQUIRED">Sem revisão necessária</option>
             </select>
-            <div className="flex gap-2">
+            <div className="flex min-w-0 gap-2 sm:col-span-2 lg:col-span-3 2xl:col-span-1">
               <Button type="submit" className="h-10 flex-1">
                 Filtrar
               </Button>
-              <Button asChild type="button" variant="outline" className="h-10">
+              <Button asChild type="button" variant="outline" className="h-10 flex-1 sm:flex-none">
                 <Link href="/transacoes">Limpar</Link>
               </Button>
             </div>
@@ -230,7 +237,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
               <p className="text-sm text-muted-foreground">
                 Exibindo {firstItem}–{lastItem} de {data.total}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
                 {data.page > 1 ? (
                   <Button asChild variant="outline" size="sm">
                     <Link href={buildHref({ page: data.page - 1 })}>

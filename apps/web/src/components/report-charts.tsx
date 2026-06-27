@@ -167,7 +167,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
           if (!open) setSelectedCategory(null);
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{selectedCategory ?? "Categoria"}</DialogTitle>
             <DialogDescription>
@@ -177,7 +177,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
           </DialogHeader>
 
           <div className="overflow-hidden rounded-xl border">
-            <div className="grid grid-cols-[96px_1fr_128px] bg-muted/60 px-4 py-3 text-xs font-medium text-muted-foreground">
+            <div className="hidden grid-cols-[96px_1fr_128px] bg-muted/60 px-4 py-3 text-xs font-medium text-muted-foreground sm:grid">
               <span>Data</span>
               <span>Descrição</span>
               <span className="text-right">Valor</span>
@@ -186,21 +186,21 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
               {currentTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="grid grid-cols-[96px_1fr_128px] items-center gap-3 px-4 py-3 text-sm"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-4 py-3 text-sm sm:grid-cols-[96px_minmax(0,1fr)_128px] sm:items-center sm:gap-3"
                 >
-                  <span className="tabular text-muted-foreground">
+                  <span className="tabular text-xs text-muted-foreground sm:text-sm">
                     {new Intl.DateTimeFormat("pt-BR", {
                       day: "2-digit",
                       month: "short",
                     }).format(new Date(transaction.date))}
                   </span>
-                  <span className="min-w-0">
+                  <span className="col-span-2 min-w-0 sm:col-span-1">
                     <span className="block truncate font-medium">{transaction.description}</span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {transaction.institution ?? "Instituição"} · {transaction.account}
                     </span>
                   </span>
-                  <span className="tabular text-right font-semibold">
+                  <span className="tabular row-start-1 text-right font-semibold sm:row-auto">
                     {formatCurrency(transaction.amountInBase)}
                   </span>
                 </div>
@@ -217,6 +217,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="flex-1 sm:flex-none"
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
@@ -226,6 +227,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="flex-1 sm:flex-none"
                 disabled={page >= totalPages}
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               >

@@ -71,10 +71,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <Card className="mb-4">
         <CardContent className="p-5">
           <form
-            className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.9fr_auto] xl:items-end"
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.9fr_auto] 2xl:items-end"
             method="get"
           >
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium sm:col-span-2 lg:col-span-1">
               Busca
               <span className="relative block">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -86,7 +86,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 />
               </span>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Data inicial
               <input
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -97,7 +97,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 max={report.bounds.endDate}
               />
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Data final
               <input
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -108,7 +108,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 max={report.bounds.endDate}
               />
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Base temporal
               <select
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -119,7 +119,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 <option value="POSTED">Data de lançamento</option>
               </select>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Visão
               <select
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -131,7 +131,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 <option value="CREDIT_CARD">Cartão de crédito</option>
               </select>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Conta
               <select
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -146,7 +146,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 ))}
               </select>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Banco
               <select
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -161,7 +161,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 ))}
               </select>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="min-w-0 space-y-2 text-sm font-medium">
               Categoria
               <select
                 className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
@@ -176,11 +176,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 ))}
               </select>
             </label>
-            <div className="flex gap-2">
+            <div className="flex min-w-0 gap-2 sm:col-span-2 lg:col-span-3 2xl:col-span-1">
               <Button type="submit" className="flex-1">
                 Aplicar
               </Button>
-              <Button asChild type="button" variant="outline">
+              <Button asChild type="button" variant="outline" className="flex-1 sm:flex-none">
                 <a href="/relatorios">Limpar</a>
               </Button>
             </div>
@@ -236,13 +236,15 @@ function Metric({
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-start justify-between gap-3">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <span className="grid size-8 place-items-center rounded-lg bg-muted text-muted-foreground">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
             <Icon className="size-4" />
           </span>
         </div>
-        <p className="tabular mt-5 text-2xl font-semibold tracking-tight">{value}</p>
+        <p className="tabular mt-5 break-words text-xl font-semibold tracking-tight sm:text-2xl">
+          {value}
+        </p>
       </CardContent>
     </Card>
   );
