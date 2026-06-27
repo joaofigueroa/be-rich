@@ -18,7 +18,7 @@ const features = [
 
 export default function Home() {
   return (
-    <main className="overflow-hidden">
+    <main className="app-page-shell overflow-hidden">
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8"
         aria-label="Navegação principal"
@@ -79,7 +79,7 @@ export default function Home() {
           {features.map(([title, description], index) => (
             <article
               key={title}
-              className="rounded-2xl border border-border/70 bg-background p-6 shadow-sm"
+              className="motion-soft motion-lift rounded-2xl border border-border/70 bg-background p-6 shadow-sm"
             >
               <span className="mb-8 grid size-9 place-items-center rounded-full bg-emerald-600 text-sm font-bold text-white">
                 0{index + 1}

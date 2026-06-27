@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Entrar" };
 
 export default function LoginPage() {
   return (
-    <main className="grid min-h-screen lg:grid-cols-[0.9fr_1.1fr]">
+    <main className="app-page-shell grid min-h-screen lg:grid-cols-[0.9fr_1.1fr]">
       <section className="flex flex-col px-5 py-6 sm:px-10 lg:px-16">
         <Logo />
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-16">

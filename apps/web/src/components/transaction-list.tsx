@@ -150,7 +150,7 @@ export function TransactionList({ transactions, categories, bills }: Transaction
             type="button"
             key={transaction.id}
             onClick={() => openEditor(transaction)}
-            className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_140px_120px] sm:items-center"
+            className="motion-soft grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-4 py-4 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_140px_120px] sm:items-center"
           >
             <span
               className={`grid size-9 shrink-0 place-items-center rounded-xl ${transaction.direction === "CREDIT" ? "bg-emerald-500/12 text-emerald-600" : "bg-muted text-muted-foreground"}`}

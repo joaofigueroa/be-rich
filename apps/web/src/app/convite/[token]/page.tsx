@@ -13,7 +13,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     redirect("/dashboard");
   }
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5">
+    <main className="app-page-shell mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5">
       <Logo />
       <div className="mt-10 rounded-2xl border bg-card p-7">
         <h1 className="text-2xl font-semibold">Participar do espaço familiar</h1>

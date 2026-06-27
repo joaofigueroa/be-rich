@@ -50,7 +50,9 @@ export default async function PrivateLayout({ children }: { children: React.Reac
             </span>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-[1500px] min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="app-page-shell mx-auto w-full max-w-[1500px] min-w-0 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

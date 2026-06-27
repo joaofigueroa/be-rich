@@ -175,7 +175,7 @@ export function ImportWizard({
         onDrop={handleDrop}
         onClick={() => fileRef.current?.click()}
         disabled={state === "uploading"}
-        className={`group relative grid w-full place-items-center rounded-2xl border-2 border-dashed px-5 py-14 text-center transition-colors ${
+        className={`motion-soft group relative grid w-full place-items-center rounded-2xl border-2 border-dashed px-5 py-14 text-center ${
           isDragging
             ? "border-emerald-600 bg-emerald-500/10"
             : selectedFile

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
+import { NavigationMotion } from "@/components/navigation-motion";
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -32,6 +34,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <Suspense fallback={null}>
+          <NavigationMotion />
+        </Suspense>
         <PwaRegister />
       </body>
     </html>

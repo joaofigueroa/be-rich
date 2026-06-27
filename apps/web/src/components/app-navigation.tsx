@@ -46,7 +46,7 @@ export function AppNavigation() {
         />
       ) : null}
       <nav
-        className={`fixed inset-y-0 left-0 z-50 h-svh w-72 max-w-[calc(100vw-2rem)] border-r bg-card p-4 shadow-2xl transition-transform lg:static lg:z-auto lg:h-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 h-svh w-72 max-w-[calc(100vw-2rem)] border-r bg-card p-4 shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:h-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Seções do aplicativo"
       >
         <div className="mb-5 flex justify-end lg:hidden">
@@ -69,7 +69,7 @@ export function AppNavigation() {
                 href={href}
                 onClick={() => setOpen(false)}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                className={`motion-soft motion-lift flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${active ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
               >
                 <Icon className="size-4.5" />
                 {label}
