@@ -25,7 +25,7 @@ As leituras seguem `Server Component → service → repository`. Escritas usam 
 ## Desenvolvimento
 
 1. Use Node 22+ e pnpm 10.12.3.
-2. Copie `.env.example` para `.env.local` e informe as credenciais.
+2. Na raiz do monorepo, copie `.env.example` para `.env.local` e informe as credenciais. O Next.js e o Drizzle carregam esse arquivo compartilhado explicitamente.
 3. Execute `pnpm install`, `pnpm db:migrate` e `pnpm dev`.
 4. Em outro terminal, quando necessário, execute `pnpm --filter @be-rich/web workflow:dev`.
 

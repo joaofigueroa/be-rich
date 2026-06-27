@@ -9,7 +9,9 @@ import { ensurePersonalWorkspace } from "@/server/services/workspaces/workspace-
 function createAuth() {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret) {
-    throw new Error("BETTER_AUTH_SECRET is required");
+    throw new Error(
+      "BETTER_AUTH_SECRET is required. Add it to the monorepo .env.local and restart the server.",
+    );
   }
 
   const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
