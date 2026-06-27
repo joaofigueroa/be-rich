@@ -1,6 +1,7 @@
 import Decimal from "decimal.js";
 
 type ReportChartRow = {
+  id: string;
   occurredAt: Date;
   postedAt: Date;
   direction: "CREDIT" | "DEBIT";
@@ -8,6 +9,9 @@ type ReportChartRow = {
   amountInBase: string;
   billId?: string | null;
   accountType?: string;
+  description: string;
+  account: string;
+  institution: string | null;
   category: string | null;
 };
 
@@ -22,6 +26,17 @@ export function buildReportChartData(
     { period: string; income: Decimal; consumption: Decimal; cashFlow: Decimal }
   >();
   const categories = new Map<string, Decimal>();
+  const categoryDetails = new Map<
+    string,
+    Array<{
+      id: string;
+      date: string;
+      description: string;
+      account: string;
+      institution: string | null;
+      amountInBase: string;
+    }>
+  >();
 
   for (const row of rows) {
     const chartDate = dateBasis === "OCCURRED" ? row.occurredAt : row.postedAt;
@@ -47,6 +62,16 @@ export function buildReportChartData(
       current.consumption = current.consumption.plus(amount);
       const category = row.category ?? "Sem categoria";
       categories.set(category, (categories.get(category) ?? new Decimal(0)).plus(amount));
+      const details = categoryDetails.get(category) ?? [];
+      details.push({
+        id: row.id,
+        date: chartDate.toISOString(),
+        description: row.description,
+        account: row.account,
+        institution: row.institution,
+        amountInBase: row.amountInBase,
+      });
+      categoryDetails.set(category, details);
     }
     timeline.set(monthKey, current);
   }
@@ -64,5 +89,9 @@ export function buildReportChartData(
       .sort(([, left], [, right]) => right.comparedTo(left))
       .slice(0, 8)
       .map(([category, amount]) => ({ category, amount: amount.toNumber() })),
+    categoryDetails: [...categoryDetails.entries()].map(([category, transactions]) => ({
+      category,
+      transactions: transactions.sort((left, right) => right.date.localeCompare(left.date)),
+    })),
   };
 }
