@@ -46,7 +46,8 @@ describe("buildReportChartData", () => {
         nature: "CONSUMPTION",
         amountInBase: "500",
         category: "Mercado",
-        accountType: "CREDIT_CARD",
+        billId: "bill-1",
+        accountType: "PAYMENT",
       },
       {
         occurredAt: new Date("2026-01-20T00:00:00.000Z"),

@@ -5,11 +5,13 @@ import { Input } from "@be-rich/ui/input";
 import {
   AlertCircle,
   CheckCircle2,
+  FileCheck2,
   FileSpreadsheet,
   LoaderCircle,
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
+import type { DragEvent, FormEvent } from "react";
 import { useRef, useState } from "react";
 
 type Account = { id: string; name: string; type: string };
@@ -41,11 +43,19 @@ export function ImportWizard({
     "idle" | "uploading" | "review" | "confirming" | "done" | "error"
   >("idle");
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   async function parse(form: FormData) {
+    if (!selectedFile) {
+      setError("Selecione ou arraste um arquivo para preparar a revisão.");
+      setState("error");
+      return;
+    }
     setState("uploading");
     setError("");
     form.set("workspaceId", workspaceId);
+    form.set("file", selectedFile, selectedFile.name);
     const response = await fetch("/api/imports/parse", { method: "POST", body: form });
     const body = await response.json();
     if (!response.ok) {
@@ -55,6 +65,22 @@ export function ImportWizard({
     }
     setPreview(body);
     setState("review");
+  }
+  function handleFile(file: File | undefined) {
+    if (!file) return;
+    setSelectedFile(file);
+    setPreview(null);
+    setError("");
+    setState("idle");
+  }
+  function handleDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    handleFile(event.dataTransfer.files[0]);
+  }
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void parse(new FormData(event.currentTarget));
   }
   async function confirm(accountId: string) {
     if (!preview) return;
@@ -92,12 +118,13 @@ export function ImportWizard({
         onConfirm={confirm}
         onBack={() => {
           setPreview(null);
+          setSelectedFile(null);
           setState("idle");
         }}
       />
     );
   return (
-    <form action={parse} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Instituição">
           <select
@@ -125,24 +152,68 @@ export function ImportWizard({
       </div>
       <button
         type="button"
+        aria-label="Selecionar ou arrastar extrato"
+        aria-busy={state === "uploading"}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
         onClick={() => fileRef.current?.click()}
-        className="group grid w-full place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/25 px-5 py-14 text-center transition-colors hover:border-emerald-600/50 hover:bg-emerald-500/5"
+        disabled={state === "uploading"}
+        className={`group relative grid w-full place-items-center rounded-2xl border-2 border-dashed px-5 py-14 text-center transition-colors ${
+          isDragging
+            ? "border-emerald-600 bg-emerald-500/10"
+            : selectedFile
+              ? "border-emerald-500/50 bg-emerald-500/5"
+              : "border-border bg-muted/25 hover:border-emerald-600/50 hover:bg-emerald-500/5"
+        } ${state === "uploading" ? "cursor-wait opacity-80" : ""}`}
       >
-        <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-600">
-          <UploadCloud className="size-6" />
-        </span>
-        <span className="mt-4 font-semibold">Selecione seu extrato</span>
-        <span className="mt-1 text-sm text-muted-foreground">
-          CSV, XLSX, OFX ou PDF textual · até 10 MB
-        </span>
+        {state === "uploading" ? (
+          <>
+            <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-600">
+              <LoaderCircle className="size-6 animate-spin" />
+            </span>
+            <span className="mt-4 font-semibold">Lendo arquivo e preparando revisão...</span>
+            <span className="mt-1 text-sm text-muted-foreground">
+              Isso pode levar alguns segundos em extratos maiores.
+            </span>
+          </>
+        ) : selectedFile ? (
+          <>
+            <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-600">
+              <FileCheck2 className="size-6" />
+            </span>
+            <span className="mt-4 max-w-full truncate font-semibold">{selectedFile.name}</span>
+            <span className="mt-1 text-sm text-muted-foreground">
+              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB · clique para trocar ou arraste
+              outro arquivo
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-600">
+              <UploadCloud className="size-6" />
+            </span>
+            <span className="mt-4 font-semibold">Arraste seu extrato aqui</span>
+            <span className="mt-1 text-sm text-muted-foreground">
+              ou clique para selecionar · CSV, XLSX, OFX ou PDF textual · até 10 MB
+            </span>
+          </>
+        )}
       </button>
       <Input
         ref={fileRef}
         name="file"
         type="file"
-        required
         accept=".csv,.xlsx,.ofx,.pdf"
         className="sr-only"
+        onChange={(event) => handleFile(event.target.files?.[0])}
       />
       <Field label="Senha do PDF (opcional)">
         <Input
@@ -164,10 +235,10 @@ export function ImportWizard({
           <ShieldCheck className="size-4 text-emerald-600" />O arquivo original é apagado após a
           leitura.
         </p>
-        <Button type="submit" disabled={state === "uploading"}>
+        <Button type="submit" disabled={!selectedFile || state === "uploading"}>
           {state === "uploading" ? (
             <>
-              <LoaderCircle className="size-4 animate-spin" /> Lendo...
+              <LoaderCircle className="size-4 animate-spin" /> Preparando...
             </>
           ) : (
             <>
@@ -195,14 +266,24 @@ function Review({
   onConfirm: (id: string) => void;
   onBack: () => void;
 }) {
-  const compatibleAccounts = accounts.filter((account) =>
-    preview.batch.product === "CREDIT_CARD"
-      ? account.type === "CREDIT_CARD"
-      : account.type !== "CREDIT_CARD",
-  );
+  const compatibleAccounts = accounts;
   const [accountId, setAccountId] = useState(compatibleAccounts[0]?.id ?? "");
   return (
     <div>
+      <div className="mb-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl bg-emerald-500/12 text-emerald-600">
+            <CheckCircle2 className="size-4" />
+          </span>
+          <div>
+            <p className="font-semibold">Arquivo lido com sucesso</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A revisão está pronta. Escolha a conta de destino e importe todos os lançamentos
+              válidos quando estiver tudo certo.
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">{preview.batch.filename}</h2>
@@ -229,9 +310,7 @@ function Review({
           role="alert"
           className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm"
         >
-          {preview.batch.product === "CREDIT_CARD"
-            ? "Crie uma conta do tipo cartão de crédito antes de confirmar esta fatura."
-            : "Crie uma conta corrente ou de pagamento antes de confirmar este extrato."}
+          Crie uma conta principal antes de confirmar esta importação.
         </p>
       ) : null}
       <div className="overflow-x-auto rounded-xl border">
@@ -278,11 +357,14 @@ function Review({
         </Button>
         <Button disabled={!accountId || confirming} onClick={() => onConfirm(accountId)}>
           {confirming ? (
-            <LoaderCircle className="size-4 animate-spin" />
+            <>
+              <LoaderCircle className="size-4 animate-spin" /> Importando...
+            </>
           ) : (
-            <CheckCircle2 className="size-4" />
-          )}{" "}
-          Confirmar importação
+            <>
+              <CheckCircle2 className="size-4" /> Importar tudo
+            </>
+          )}
         </Button>
       </div>
     </div>

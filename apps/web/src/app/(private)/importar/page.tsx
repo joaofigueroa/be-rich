@@ -18,6 +18,7 @@ export default async function ImportPage() {
           and(eq(account.workspaceId, workspace.id), eq(account.active, true)),
       })
     : [];
+  const destinationAccounts = accounts.filter((account) => account.type !== "CREDIT_CARD");
   if (!workspace) return null;
   return (
     <>
@@ -34,7 +35,7 @@ export default async function ImportPage() {
           <CardContent>
             <ImportWizard
               workspaceId={workspace.id}
-              accounts={accounts.map(({ id, name, type }) => ({ id, name, type }))}
+              accounts={destinationAccounts.map(({ id, name, type }) => ({ id, name, type }))}
             />
           </CardContent>
         </Card>
@@ -44,7 +45,7 @@ export default async function ImportPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {accounts.map((account) => (
+              {destinationAccounts.map((account) => (
                 <div key={account.id} className="rounded-xl border p-3">
                   <p className="text-sm font-medium">{account.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -70,7 +71,6 @@ export default async function ImportPage() {
               >
                 <option value="CHECKING">Conta corrente</option>
                 <option value="PAYMENT">Conta de pagamento</option>
-                <option value="CREDIT_CARD">Cartão de crédito</option>
                 <option value="INVESTMENT">Investimentos / caixinha</option>
                 <option value="DEBT">Dívida</option>
               </select>

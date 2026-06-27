@@ -8,8 +8,9 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lte,
-  ne,
   or,
   schema,
   sql,
@@ -79,9 +80,9 @@ export async function getReportData(userId: string, rawInput: unknown) {
 
   const accountScopeCondition =
     requestedInput.accountScope === "CREDIT_CARD"
-      ? eq(schema.financialAccounts.type, "CREDIT_CARD")
+      ? isNotNull(schema.transactions.billId)
       : requestedInput.accountScope === "ACCOUNT"
-        ? ne(schema.financialAccounts.type, "CREDIT_CARD")
+        ? isNull(schema.transactions.billId)
         : undefined;
   const baseFilters = [
     inArray(schema.transactions.workspaceId, workspaceIds),
@@ -168,6 +169,7 @@ export async function getReportData(userId: string, rawInput: unknown) {
       postedAt: schema.transactions.postedAt,
       description: schema.transactions.description,
       direction: schema.transactions.direction,
+      billId: schema.transactions.billId,
       nature: schema.transactions.nature,
       amount: schema.transactions.amount,
       currency: schema.transactions.currency,

@@ -12,9 +12,7 @@ export async function ensureCreditCardBillForImport(batchId: string) {
   const account = await getDb().query.financialAccounts.findFirst({
     where: eq(schema.financialAccounts.id, batch.accountId),
   });
-  if (!account || account.type !== "CREDIT_CARD") {
-    throw new Error("Importações de fatura exigem uma conta do tipo cartão de crédito");
-  }
+  if (!account) throw new Error("A conta da importação não foi encontrada");
   if (batch.creditCardBillId) {
     return getDb().query.creditCardBills.findFirst({
       where: eq(schema.creditCardBills.id, batch.creditCardBillId),
@@ -165,39 +163,6 @@ export async function repairExistingCreditCardImports() {
       where: eq(schema.financialAccounts.id, batch.accountId),
     });
     if (!originalAccount) continue;
-    let cardAccount: typeof originalAccount | undefined = originalAccount;
-    if (originalAccount.type !== "CREDIT_CARD") {
-      const cardName = `${originalAccount.name} — Cartão`;
-      cardAccount =
-        (await getDb().query.financialAccounts.findFirst({
-          where: (account, { and, eq }) =>
-            and(
-              eq(account.workspaceId, originalAccount.workspaceId),
-              eq(account.name, cardName),
-              eq(account.type, "CREDIT_CARD"),
-            ),
-        })) ??
-        (
-          await getDb()
-            .insert(schema.financialAccounts)
-            .values({
-              workspaceId: originalAccount.workspaceId,
-              institutionId: originalAccount.institutionId,
-              name: cardName,
-              type: "CREDIT_CARD",
-              currency: originalAccount.currency,
-              lastFour: originalAccount.lastFour,
-              origin: "MANUAL_IMPORT",
-              createdBy: batch.createdBy,
-            })
-            .returning()
-        )[0];
-      if (!cardAccount) throw new Error("Não foi possível criar a conta de cartão");
-      await getDb()
-        .update(schema.importBatches)
-        .set({ accountId: cardAccount.id, updatedAt: new Date() })
-        .where(eq(schema.importBatches.id, batch.id));
-    }
     const bill = await ensureCreditCardBillForImport(batch.id);
     if (!bill) continue;
     const rows = await getDb().query.importRows.findMany({
@@ -208,7 +173,7 @@ export async function repairExistingCreditCardImports() {
     if (fingerprints.length) {
       const moved = await getDb()
         .update(schema.transactions)
-        .set({ accountId: cardAccount.id, billId: bill.id, updatedAt: new Date() })
+        .set({ accountId: originalAccount.id, billId: bill.id, updatedAt: new Date() })
         .where(
           and(
             eq(schema.transactions.accountId, originalAccount.id),

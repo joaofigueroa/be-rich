@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq, getDb, gte, inArray, schema } from "@be-rich/database";
 import { subDays } from "date-fns";
 import { calculateNetWorth, calculateReportTotals } from "@/server/domain/financial-calculator";
+import { consolidateTechnicalCreditCardAccounts } from "@/server/services/accounts/account-consolidation-service";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
 
 export async function getDashboardSnapshot(userId: string) {
@@ -20,12 +21,15 @@ export async function getDashboardSnapshot(userId: string) {
       netWorthComplete: true,
     };
 
-  const [transactions, accounts, goals] = await Promise.all([
+  await consolidateTechnicalCreditCardAccounts(workspaceIds);
+
+  const [transactions, accounts, goals, openBills] = await Promise.all([
     getDb()
       .select({
         id: schema.transactions.id,
         amountInBase: schema.transactions.amountInBase,
         direction: schema.transactions.direction,
+        billId: schema.transactions.billId,
         nature: schema.transactions.nature,
         accountType: schema.financialAccounts.type,
         occurredAt: schema.transactions.occurredAt,
@@ -53,8 +57,24 @@ export async function getDashboardSnapshot(userId: string) {
         and(inArray(goal.workspaceId, workspaceIds), eq(goal.status, "ACTIVE")),
       limit: 4,
     }),
+    getDb()
+      .select({
+        total: schema.creditCardBills.total,
+      })
+      .from(schema.creditCardBills)
+      .innerJoin(
+        schema.financialAccounts,
+        eq(schema.creditCardBills.accountId, schema.financialAccounts.id),
+      )
+      .where(
+        and(
+          inArray(schema.financialAccounts.workspaceId, workspaceIds),
+          eq(schema.creditCardBills.status, "OPEN"),
+        ),
+      ),
   ]);
-  const accountIds = new Set(accounts.map((account) => account.id));
+  const visibleAccounts = accounts.filter((account) => account.type !== "CREDIT_CARD");
+  const accountIds = new Set(visibleAccounts.map((account) => account.id));
   const balances = accountIds.size
     ? await getDb()
         .select()
@@ -69,25 +89,20 @@ export async function getDashboardSnapshot(userId: string) {
         balanceInBase: snapshot.balanceInBase,
         asOf: snapshot.asOf,
       });
-  const cash = accounts
-    .filter(
-      (account) =>
-        account.type !== "CREDIT_CARD" && account.type !== "DEBT" && account.type !== "INVESTMENT",
-    )
+  const cash = visibleAccounts
+    .filter((account) => account.type !== "DEBT" && account.type !== "INVESTMENT")
     .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
-  const investments = accounts
+  const investments = visibleAccounts
     .filter((account) => account.type === "INVESTMENT")
     .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
-  const debts = accounts
+  const debts = visibleAccounts
     .filter((account) => account.type === "DEBT")
     .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
-  const bills = accounts
-    .filter((account) => account.type === "CREDIT_CARD")
-    .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
+  const bills = openBills.map((bill) => bill.total);
 
   return {
     workspaceIds,
-    accounts,
+    accounts: visibleAccounts,
     accountBalances: Object.fromEntries(latestBalances),
     goals,
     recent: transactions.slice(0, 8),
@@ -98,6 +113,6 @@ export async function getDashboardSnapshot(userId: string) {
       openCardBills: bills,
       debts,
     }),
-    netWorthComplete: accounts.every((account) => latestBalances.has(account.id)),
+    netWorthComplete: visibleAccounts.every((account) => latestBalances.has(account.id)),
   };
 }

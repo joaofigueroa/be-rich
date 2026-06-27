@@ -7,6 +7,7 @@ export const LedgerEntrySchema = z.object({
   accountType: z
     .enum(["CHECKING", "SAVINGS", "PAYMENT", "CREDIT_CARD", "INVESTMENT", "CASH", "DEBT"])
     .optional(),
+  billId: z.string().nullable().optional(),
   nature: z.enum([
     "INCOME",
     "CONSUMPTION",
@@ -38,7 +39,7 @@ export function calculateReportTotals(entries: LedgerEntry[]) {
   );
   const cashFlow = sum(
     entries
-      .filter((entry) => entry.accountType !== "CREDIT_CARD")
+      .filter((entry) => !entry.billId && entry.accountType !== "CREDIT_CARD")
       .map((entry) => signedAmount(entry.direction, entry.amountInBase)),
   );
 

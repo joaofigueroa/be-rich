@@ -16,7 +16,7 @@ export async function createFinancialAccountAction(form: FormData) {
     .object({
       workspaceId: z.uuidv7(),
       name: z.string().trim().min(2).max(80),
-      type: z.enum(["CHECKING", "SAVINGS", "PAYMENT", "CREDIT_CARD", "INVESTMENT", "CASH", "DEBT"]),
+      type: z.enum(["CHECKING", "SAVINGS", "PAYMENT", "INVESTMENT", "CASH", "DEBT"]),
       currency: z.string().regex(/^[A-Z]{3}$/),
     })
     .parse(Object.fromEntries(form));

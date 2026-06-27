@@ -6,6 +6,7 @@ type ReportChartRow = {
   direction: "CREDIT" | "DEBIT";
   nature: string;
   amountInBase: string;
+  billId?: string | null;
   accountType?: string;
   category: string | null;
 };
@@ -36,7 +37,7 @@ export function buildReportChartData(
       cashFlow: new Decimal(0),
     };
     const amount = new Decimal(row.amountInBase);
-    if (row.accountType !== "CREDIT_CARD") {
+    if (!row.billId && row.accountType !== "CREDIT_CARD") {
       current.cashFlow = current.cashFlow.plus(
         row.direction === "CREDIT" ? amount : amount.negated(),
       );

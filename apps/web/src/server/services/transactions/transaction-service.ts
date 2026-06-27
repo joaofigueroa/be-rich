@@ -10,8 +10,9 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lte,
-  ne,
   or,
   schema,
 } from "@be-rich/database";
@@ -92,9 +93,9 @@ export async function getTransactionsPageForUser(
 
   const viewCondition =
     input.view === "CREDIT_CARD"
-      ? eq(schema.financialAccounts.type, "CREDIT_CARD")
+      ? isNotNull(schema.transactions.billId)
       : input.view === "ACCOUNT"
-        ? ne(schema.financialAccounts.type, "CREDIT_CARD")
+        ? isNull(schema.transactions.billId)
         : undefined;
   const filters = [
     inArray(schema.transactions.workspaceId, workspaceIds),

@@ -35,6 +35,17 @@ describe("financial calculator", () => {
     expect(totals.cashFlow).toBe("-800.00");
   });
 
+  it("mantém compras de fatura no consumo sem duplicar o fluxo de caixa", () => {
+    const totals = calculateReportTotals([
+      { amountInBase: "5000", direction: "CREDIT", nature: "INCOME" },
+      { amountInBase: "300", direction: "DEBIT", nature: "CONSUMPTION", billId: "bill-1" },
+      { amountInBase: "300", direction: "DEBIT", nature: "CARD_PAYMENT" },
+    ]);
+
+    expect(totals.consumption).toBe("300.00");
+    expect(totals.cashFlow).toBe("4700.00");
+  });
+
   it("calcula patrimônio líquido", () => {
     expect(
       calculateNetWorth({
