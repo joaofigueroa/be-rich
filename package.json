@@ -1,0 +1,26 @@
+{
+  "name": "be-rich",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "check": "biome check . --max-diagnostics=1000 --no-errors-on-unmatched --files-ignore-unknown=true",
+    "fix": "biome check . --write --unsafe --max-diagnostics=1000 --no-errors-on-unmatched --files-ignore-unknown=true",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "validate": "pnpm check && pnpm check-types && pnpm test",
+    "db:generate": "pnpm --filter @be-rich/database db:generate",
+    "db:migrate": "pnpm --filter @be-rich/database db:migrate",
+    "db:studio": "pnpm --filter @be-rich/database db:studio"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.5",
+    "turbo": "2.5.8",
+    "typescript": "5.9.3"
+  }
+}

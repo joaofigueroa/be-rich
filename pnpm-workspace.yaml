@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "config/*"
+
+onlyBuiltDependencies:
+  - "@swc/core"
+  - cbor-extract
+  - esbuild
+  - sharp
+  - unrs-resolver
