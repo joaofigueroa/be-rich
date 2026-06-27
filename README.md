@@ -29,6 +29,8 @@ As leituras seguem `Server Component → service → repository`. Escritas usam 
 3. Execute `pnpm install`, `pnpm db:migrate` e `pnpm dev`.
 4. Em outro terminal, quando necessário, execute `pnpm --filter @be-rich/web workflow:dev`.
 
+Sem domínio próprio, mantenha `EMAIL_DELIVERY_MODE=console` durante o desenvolvimento. O magic link e os convites serão impressos somente no terminal local. Para testar a entrega pelo Resend, use `EMAIL_DELIVERY_MODE=resend` e `Be Rich <onboarding@resend.dev>`; o domínio de testes do Resend entrega apenas para o e-mail associado à sua conta.
+
 Comandos úteis:
 
 ```bash
