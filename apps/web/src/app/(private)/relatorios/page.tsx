@@ -1,6 +1,13 @@
 import { Button } from "@be-rich/ui/button";
 import { Card, CardContent } from "@be-rich/ui/card";
-import { ArrowDownRight, ArrowUpRight, FileSpreadsheet, FileText, WalletCards } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  FileSpreadsheet,
+  FileText,
+  Search,
+  WalletCards,
+} from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { ReportCharts } from "@/components/report-charts";
 import { formatCurrency } from "@/lib/format";
@@ -13,6 +20,10 @@ type ReportsPageProps = {
     endDate?: string | string[];
     dateBasis?: string | string[];
     accountScope?: string | string[];
+    q?: string | string[];
+    accountId?: string | string[];
+    institutionId?: string | string[];
+    categoryId?: string | string[];
   }>;
 };
 
@@ -28,6 +39,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     endDate: singleValue(params.endDate),
     dateBasis: singleValue(params.dateBasis),
     accountScope: singleValue(params.accountScope),
+    q: singleValue(params.q),
+    accountId: singleValue(params.accountId),
+    institutionId: singleValue(params.institutionId),
+    categoryId: singleValue(params.categoryId),
   });
   const exportQuery = new URLSearchParams(report.input).toString();
 
@@ -56,9 +71,21 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <Card className="mb-4">
         <CardContent className="p-5">
           <form
-            className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] xl:items-end"
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.9fr_auto] xl:items-end"
             method="get"
           >
+            <label className="space-y-2 text-sm font-medium">
+              Busca
+              <span className="relative block">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className="block h-10 w-full rounded-lg border bg-background pl-10 pr-3 font-normal"
+                  name="q"
+                  placeholder="Descrição ou estabelecimento"
+                  defaultValue={report.input.q}
+                />
+              </span>
+            </label>
             <label className="space-y-2 text-sm font-medium">
               Data inicial
               <input
@@ -104,7 +131,59 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 <option value="CREDIT_CARD">Cartão de crédito</option>
               </select>
             </label>
-            <Button type="submit">Aplicar filtros</Button>
+            <label className="space-y-2 text-sm font-medium">
+              Conta
+              <select
+                className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
+                name="accountId"
+                defaultValue={report.input.accountId}
+              >
+                <option value="">Todas as contas</option>
+                {report.accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
+              Banco
+              <select
+                className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
+                name="institutionId"
+                defaultValue={report.input.institutionId}
+              >
+                <option value="">Todos os bancos</option>
+                {report.institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
+              Categoria
+              <select
+                className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
+                name="categoryId"
+                defaultValue={report.input.categoryId}
+              >
+                <option value="">Todas as categorias</option>
+                {report.categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.parentName} · {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">
+                Aplicar
+              </Button>
+              <Button asChild type="button" variant="outline">
+                <a href="/relatorios">Limpar</a>
+              </Button>
+            </div>
           </form>
           <p className="mt-3 text-xs text-muted-foreground">
             Dados disponíveis de {report.bounds.startDate} a {report.bounds.endDate}.

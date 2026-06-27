@@ -14,6 +14,10 @@ export async function GET(request: Request) {
       endDate: url.searchParams.get("endDate") ?? undefined,
       dateBasis: url.searchParams.get("dateBasis") ?? undefined,
       accountScope: url.searchParams.get("accountScope") ?? undefined,
+      q: url.searchParams.get("q") ?? undefined,
+      accountId: url.searchParams.get("accountId") ?? undefined,
+      institutionId: url.searchParams.get("institutionId") ?? undefined,
+      categoryId: url.searchParams.get("categoryId") ?? undefined,
     });
     const pdf = await renderToBuffer(ReportDocument({ report }));
     return new NextResponse(new Uint8Array(pdf), {

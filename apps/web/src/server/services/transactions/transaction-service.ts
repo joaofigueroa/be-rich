@@ -1,14 +1,62 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, getDb, inArray, ne, schema } from "@be-rich/database";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getDb,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  ne,
+  or,
+  schema,
+} from "@be-rich/database";
 import { z } from "zod";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
+
+const optionalUuid = z
+  .preprocess(
+    (value) => (typeof value === "string" && value.trim() ? value.trim() : undefined),
+    z.uuidv7().optional(),
+  )
+  .optional();
+const optionalSearch = z
+  .preprocess(
+    (value) => (typeof value === "string" && value.trim() ? value.trim() : undefined),
+    z.string().min(2).max(120).optional(),
+  )
+  .optional();
 
 const TransactionPageInputSchema = z.object({
   userId: z.uuidv7(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(10).max(100).default(20),
   view: z.enum(["ALL", "ACCOUNT", "CREDIT_CARD"]).default("ALL"),
+  q: optionalSearch,
+  startDate: z.iso.date().optional(),
+  endDate: z.iso.date().optional(),
+  accountId: optionalUuid,
+  institutionId: optionalUuid,
+  categoryId: optionalUuid,
+  nature: z
+    .enum([
+      "INCOME",
+      "CONSUMPTION",
+      "OWN_TRANSFER",
+      "CARD_PAYMENT",
+      "INVESTMENT_CONTRIBUTION",
+      "INVESTMENT_REDEMPTION",
+      "DEBT_PRINCIPAL",
+      "INTEREST_FEE",
+      "REFUND",
+      "ADJUSTMENT",
+    ])
+    .optional(),
+  reviewStatus: z.enum(["NOT_REQUIRED", "PENDING", "CONFIRMED"]).optional(),
 });
 
 export async function getTransactionsPageForUser(
@@ -22,6 +70,19 @@ export async function getTransactionsPageForUser(
       transactions: [],
       categories: [],
       bills: [],
+      accounts: [],
+      institutions: [],
+      filters: {
+        view: input.view,
+        q: input.q ?? "",
+        startDate: input.startDate ?? "",
+        endDate: input.endDate ?? "",
+        accountId: input.accountId ?? "",
+        institutionId: input.institutionId ?? "",
+        categoryId: input.categoryId ?? "",
+        nature: input.nature ?? "",
+        reviewStatus: input.reviewStatus ?? "",
+      },
       page: 1,
       pageSize: input.pageSize,
       total: 0,
@@ -35,11 +96,34 @@ export async function getTransactionsPageForUser(
       : input.view === "ACCOUNT"
         ? ne(schema.financialAccounts.type, "CREDIT_CARD")
         : undefined;
-  const transactionCondition = viewCondition
-    ? and(inArray(schema.transactions.workspaceId, workspaceIds), viewCondition)
-    : inArray(schema.transactions.workspaceId, workspaceIds);
+  const filters = [
+    inArray(schema.transactions.workspaceId, workspaceIds),
+    viewCondition,
+    input.q
+      ? or(
+          ilike(schema.transactions.description, `%${input.q}%`),
+          ilike(schema.transactions.normalizedDescription, `%${input.q}%`),
+          ilike(schema.transactions.merchant, `%${input.q}%`),
+          ilike(schema.transactions.counterparty, `%${input.q}%`),
+        )
+      : undefined,
+    input.startDate
+      ? gte(schema.transactions.occurredAt, new Date(`${input.startDate}T00:00:00.000Z`))
+      : undefined,
+    input.endDate
+      ? lte(schema.transactions.occurredAt, new Date(`${input.endDate}T23:59:59.999Z`))
+      : undefined,
+    input.accountId ? eq(schema.transactions.accountId, input.accountId) : undefined,
+    input.institutionId
+      ? eq(schema.financialAccounts.institutionId, input.institutionId)
+      : undefined,
+    input.categoryId ? eq(schema.transactions.categoryId, input.categoryId) : undefined,
+    input.nature ? eq(schema.transactions.nature, input.nature) : undefined,
+    input.reviewStatus ? eq(schema.transactions.reviewStatus, input.reviewStatus) : undefined,
+  ].filter(Boolean);
+  const transactionCondition = and(...filters);
 
-  const [{ total }, allCategories, bills] = await Promise.all([
+  const [{ total }, allCategories, bills, accounts, institutions] = await Promise.all([
     getDb()
       .select({ total: count() })
       .from(schema.transactions)
@@ -72,6 +156,28 @@ export async function getTransactionsPageForUser(
       )
       .where(inArray(schema.financialAccounts.workspaceId, workspaceIds))
       .orderBy(desc(schema.creditCardBills.periodEnd)),
+    getDb()
+      .select({
+        id: schema.financialAccounts.id,
+        name: schema.financialAccounts.name,
+        type: schema.financialAccounts.type,
+        institutionId: schema.financialAccounts.institutionId,
+      })
+      .from(schema.financialAccounts)
+      .where(inArray(schema.financialAccounts.workspaceId, workspaceIds))
+      .orderBy(asc(schema.financialAccounts.name)),
+    getDb()
+      .selectDistinct({
+        id: schema.institutions.id,
+        name: schema.institutions.name,
+      })
+      .from(schema.financialAccounts)
+      .innerJoin(
+        schema.institutions,
+        eq(schema.financialAccounts.institutionId, schema.institutions.id),
+      )
+      .where(inArray(schema.financialAccounts.workspaceId, workspaceIds))
+      .orderBy(asc(schema.institutions.name)),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / input.pageSize));
   const page = Math.min(input.page, totalPages);
@@ -117,5 +223,26 @@ export async function getTransactionsPageForUser(
     .limit(input.pageSize)
     .offset((page - 1) * input.pageSize);
 
-  return { transactions, categories, bills, page, pageSize: input.pageSize, total, totalPages };
+  return {
+    transactions,
+    categories,
+    bills,
+    accounts,
+    institutions,
+    filters: {
+      view: input.view,
+      q: input.q ?? "",
+      startDate: input.startDate ?? "",
+      endDate: input.endDate ?? "",
+      accountId: input.accountId ?? "",
+      institutionId: input.institutionId ?? "",
+      categoryId: input.categoryId ?? "",
+      nature: input.nature ?? "",
+      reviewStatus: input.reviewStatus ?? "",
+    },
+    page,
+    pageSize: input.pageSize,
+    total,
+    totalPages,
+  };
 }
