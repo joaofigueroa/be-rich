@@ -25,6 +25,7 @@ import { formatCurrency } from "@/lib/format";
 import type { ReportChartData } from "@/server/domain/report-charts";
 
 const TRANSACTIONS_PER_PAGE = 8;
+const CATEGORY_LABEL_MAX_CHARS = 18;
 
 function compactCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -33,6 +34,60 @@ function compactCurrency(value: number) {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function wrapCategoryLabel(label: string) {
+  const words = label.split(" ");
+  const lines: Array<{ key: string; text: string }> = [];
+  let current = "";
+  let consumedCharacters = 0;
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > CATEGORY_LABEL_MAX_CHARS && current) {
+      lines.push({ key: `${consumedCharacters}-${current}`, text: current });
+      consumedCharacters += current.length + 1;
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push({ key: `${consumedCharacters}-${current}`, text: current });
+
+  return lines;
+}
+
+function CategoryAxisTick({
+  x = 0,
+  y = 0,
+  payload,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value?: unknown };
+}) {
+  const label = typeof payload?.value === "string" ? payload.value : "";
+  const lines = wrapCategoryLabel(label);
+  const lineHeight = 13;
+  const startDy = -((lines.length - 1) * lineHeight) / 2;
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        textAnchor="end"
+        fill="currentColor"
+        className="fill-muted-foreground text-[11px]"
+      >
+        {lines.map((line, index) => (
+          <tspan key={line.key} x={0} dy={index === 0 ? startDy : lineHeight}>
+            {line.text}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  );
 }
 
 export function ReportCharts({ data }: { data: ReportChartData }) {
@@ -56,6 +111,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
       (total, transaction) => total + Number(transaction.amountInBase),
       0,
     ) ?? 0;
+  const categoryChartHeight = Math.max(320, data.categories.length * 58);
 
   function openCategory(category: string) {
     setSelectedCategory(category);
@@ -106,13 +162,18 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
           </CardHeader>
           <CardContent>
             {data.categories.length ? (
-              <div className="h-80 w-full" role="img" aria-label="Gráfico de consumo por categoria">
+              <div
+                className="w-full"
+                style={{ height: categoryChartHeight }}
+                role="img"
+                aria-label="Gráfico de consumo por categoria"
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={data.categories}
                     layout="vertical"
                     accessibilityLayer
-                    margin={{ left: 10, right: 24 }}
+                    margin={{ top: 18, right: 24, bottom: 12, left: 18 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis
@@ -126,7 +187,10 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
                       dataKey="category"
                       tickLine={false}
                       axisLine={false}
-                      width={112}
+                      interval={0}
+                      tick={<CategoryAxisTick />}
+                      tickMargin={10}
+                      width={150}
                     />
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Bar

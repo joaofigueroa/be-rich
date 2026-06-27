@@ -11,6 +11,7 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
+import { AccountCreateDialog } from "@/components/account-create-dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/server/services/auth/session-service";
 import { getDashboardSnapshot } from "@/server/services/reports/dashboard-service";
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const data = await getDashboardSnapshot(user.id);
   const hasData = data.accounts.length > 0 || data.recent.length > 0;
+  const primaryWorkspaceId = data.workspaceIds[0];
   return (
     <>
       <div className="mb-7 flex min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -29,6 +31,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          {primaryWorkspaceId ? <AccountCreateDialog workspaceId={primaryWorkspaceId} /> : null}
           <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/planejamento">
               <Plus className="size-4" /> Nova meta
