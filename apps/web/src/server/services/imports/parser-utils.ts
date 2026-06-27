@@ -120,10 +120,12 @@ export function createNormalizedTransaction(input: {
 export function sanitizeFinancialDescription(value: string) {
   return value
     .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, "[CPF]")
+    .replace(/(?:[•*xX]{3})\.\d{3}\.\d{3}-(?:[•*xX]{2})/g, "[CPF]")
     .replace(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g, "[CNPJ]")
     .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[EMAIL]")
     .replace(/(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?\d{4,5}[-\s]?\d{4}/g, "[PHONE]")
     .replace(/\b(?:AG|AGENCIA|CONTA|CC)\s*[:#-]?\s*\d[\d.-]{2,}\b/gi, "[ACCOUNT]")
     .replace(/\b\d{16}\b/g, "[CARD]")
+    .replace(/(PIX\s*-\s*)[^-]+(?=\s*-\s*\[CPF\])/gi, "$1[COUNTERPARTY]")
     .trim();
 }

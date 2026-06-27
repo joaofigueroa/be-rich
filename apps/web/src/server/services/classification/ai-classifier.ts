@@ -28,12 +28,22 @@ function getOpenRouter() {
 export async function classifyWithAi(rawInput: z.input<typeof ClassifyInputSchema>) {
   const input = ClassifyInputSchema.parse(rawInput);
   const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash-lite";
-  const categoryIds = new Set(input.categories.map((category) => category.categoryId));
+  const categoryIds = input.categories.map((category) => category.categoryId) as [
+    string,
+    ...string[],
+  ];
+  const outputSchema = ClassificationResultSchema.extend({
+    categoryId: z.enum(categoryIds),
+  });
   const { output } = await generateText({
     model: getOpenRouter()(model),
-    output: Output.object({ schema: ClassificationResultSchema }),
+    output: Output.object({ schema: outputSchema }),
+    maxOutputTokens: 300,
+    maxRetries: 1,
+    timeout: { totalMs: 30_000 },
+    temperature: 0,
     system:
-      "Você classifica lançamentos financeiros brasileiros. Escolha somente uma categoria da taxonomia recebida. Não tente inferir dados pessoais removidos.",
+      "Você classifica lançamentos financeiros brasileiros. Escolha somente a subcategoria mais específica da taxonomia recebida. Não tente inferir dados pessoais removidos.",
     prompt: JSON.stringify({
       description: sanitizeFinancialDescription(input.description),
       institution: input.institution,
@@ -41,7 +51,5 @@ export async function classifyWithAi(rawInput: z.input<typeof ClassifyInputSchem
       taxonomy: input.categories,
     }),
   });
-  if (!categoryIds.has(output.categoryId))
-    throw new Error("The classifier returned an unknown category");
   return { ...output, model };
 }

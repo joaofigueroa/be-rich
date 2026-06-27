@@ -12,21 +12,36 @@ export async function processImportWorkflow(batchId: string) {
   return { batchId, transactionIds };
 }
 
-async function categorizeTransactionsStep(transactionIds: string[]) {
+export async function reprocessClassificationsWorkflow(transactionIds: string[]) {
+  "use workflow";
+  return categorizeTransactionsStep(transactionIds);
+}
+
+export async function categorizeTransactionsStep(transactionIds: string[]) {
   "use step";
+  const stats = { classified: 0, failed: 0, skipped: 0 };
   for (const transactionId of transactionIds) {
     const transaction = await getDb().query.transactions.findFirst({
       where: eq(schema.transactions.id, transactionId),
     });
-    if (!transaction || transaction.nature !== "CONSUMPTION") continue;
+    if (!transaction || !["CONSUMPTION", "INCOME"].includes(transaction.nature)) {
+      stats.skipped += 1;
+      continue;
+    }
+    const categoryType = transaction.nature === "INCOME" ? "INCOME" : "EXPENSE";
     const [rules, categories] = await Promise.all([
       getDb().query.categorizationRules.findMany({
         where: (rule, { and, eq }) =>
           and(eq(rule.workspaceId, transaction.workspaceId), eq(rule.active, true)),
       }),
       getDb().query.categories.findMany({
-        where: (category, { and, eq }) =>
-          and(eq(category.workspaceId, transaction.workspaceId), eq(category.active, true)),
+        where: (category, { and, eq, isNotNull }) =>
+          and(
+            eq(category.workspaceId, transaction.workspaceId),
+            eq(category.active, true),
+            eq(category.type, categoryType),
+            isNotNull(category.parentId),
+          ),
       }),
     ]);
     const ruleCategoryId = matchRule({
@@ -44,6 +59,7 @@ async function categorizeTransactionsStep(transactionIds: string[]) {
     });
     if (ruleCategoryId) {
       await applyClassification(transaction.id, ruleCategoryId, "RULE", 1);
+      stats.classified += 1;
       continue;
     }
 
@@ -74,6 +90,7 @@ async function categorizeTransactionsStep(transactionIds: string[]) {
         "CACHE",
         Number(cached.confidence),
       );
+      stats.classified += 1;
       continue;
     }
 
@@ -99,10 +116,18 @@ async function categorizeTransactionsStep(transactionIds: string[]) {
         })
         .onConflictDoNothing();
       await applyClassification(transaction.id, result.categoryId, "AI", result.confidence);
-    } catch {
+      stats.classified += 1;
+    } catch (error) {
       // AI is an enhancement: a provider outage leaves the row pending and never aborts an import.
+      stats.failed += 1;
+      console.error("[classification] AI classification failed", {
+        transactionId: transaction.id,
+        workspaceId: transaction.workspaceId,
+        error: error instanceof Error ? error.message : "Unknown classifier error",
+      });
     }
   }
+  return stats;
 }
 
 async function applyClassification(

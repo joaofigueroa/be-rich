@@ -1,5 +1,7 @@
+import { Button } from "@be-rich/ui/button";
 import { Card, CardContent } from "@be-rich/ui/card";
-import { ArrowDownRight, ArrowUpRight, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { reprocessCategoriesAction } from "@/app/classification-actions";
 import { PageHeading } from "@/components/page-heading";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/server/services/auth/session-service";
@@ -14,6 +16,13 @@ export default async function TransactionsPage() {
         eyebrow="Livro financeiro"
         title="Transações"
         description="Natureza financeira e categoria são independentes para evitar dupla contagem de transferências e faturas."
+        actions={
+          <form action={reprocessCategoriesAction}>
+            <Button type="submit" variant="outline">
+              <Sparkles className="size-4" /> Categorizar pendentes
+            </Button>
+          </form>
+        }
       />
       <Card>
         <CardContent className="p-0">
@@ -53,7 +62,13 @@ export default async function TransactionsPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{transaction.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {transaction.nature.replaceAll("_", " ")}
+                      {transaction.category ??
+                        (["CONSUMPTION", "INCOME"].includes(transaction.nature)
+                          ? "Categoria pendente"
+                          : "Categoria não aplicável")}
+                      {transaction.reviewStatus === "PENDING" && transaction.category
+                        ? " · revisar sugestão"
+                        : ""}
                     </p>
                   </div>
                   <p className="hidden text-sm text-muted-foreground sm:block">

@@ -43,7 +43,7 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Patrimônio líquido"
-          value={formatCurrency(data.netWorth)}
+          value={data.netWorthComplete ? formatCurrency(data.netWorth) : "Saldo incompleto"}
           icon={<Landmark className="size-4" />}
           accent
         />

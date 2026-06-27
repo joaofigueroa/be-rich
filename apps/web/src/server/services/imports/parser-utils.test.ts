@@ -13,6 +13,15 @@ describe("parser utilities", () => {
     expect(sanitized).not.toMatch(/joao|123\.456|99999/);
   });
 
+  it("remove contraparte e CPF mascarado de descrições Pix", () => {
+    const sanitized = sanitizeFinancialDescription(
+      "Transferência enviada pelo Pix - Joao da Silva - •••.844.646-•• - Banco",
+    );
+    expect(sanitized).not.toMatch(/Joao|844\.646/);
+    expect(sanitized).toContain("[COUNTERPARTY]");
+    expect(sanitized).toContain("[CPF]");
+  });
+
   it("produz fingerprint estável", () => {
     const transaction = createNormalizedTransaction({
       date: "12/05/2026",

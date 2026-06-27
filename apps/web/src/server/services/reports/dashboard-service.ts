@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, getDb, schema } from "@be-rich/database";
+import { desc, eq, getDb, inArray, schema } from "@be-rich/database";
 import { subDays } from "date-fns";
 import { calculateNetWorth, calculateReportTotals } from "@/server/domain/financial-calculator";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
@@ -12,13 +12,15 @@ export async function getDashboardSnapshot(userId: string) {
     return {
       workspaceIds,
       accounts: [],
+      accountBalances: {},
       goals: [],
       recent: [],
       totals: calculateReportTotals([]),
       netWorth: "0.00",
+      netWorthComplete: true,
     };
 
-  const [transactions, accounts, balances, goals] = await Promise.all([
+  const [transactions, accounts, goals] = await Promise.all([
     getDb().query.transactions.findMany({
       where: (transaction, { and, gte, inArray }) =>
         and(
@@ -32,10 +34,6 @@ export async function getDashboardSnapshot(userId: string) {
       where: (account, { and, eq, inArray }) =>
         and(inArray(account.workspaceId, workspaceIds), eq(account.active, true)),
     }),
-    getDb()
-      .select()
-      .from(schema.accountBalanceSnapshots)
-      .orderBy(desc(schema.accountBalanceSnapshots.asOf)),
     getDb().query.goals.findMany({
       where: (goal, { and, eq, inArray }) =>
         and(inArray(goal.workspaceId, workspaceIds), eq(goal.status, "ACTIVE")),
@@ -43,29 +41,40 @@ export async function getDashboardSnapshot(userId: string) {
     }),
   ]);
   const accountIds = new Set(accounts.map((account) => account.id));
-  const latestBalances = new Map<string, string>();
+  const balances = accountIds.size
+    ? await getDb()
+        .select()
+        .from(schema.accountBalanceSnapshots)
+        .where(inArray(schema.accountBalanceSnapshots.accountId, [...accountIds]))
+        .orderBy(desc(schema.accountBalanceSnapshots.asOf))
+    : [];
+  const latestBalances = new Map<string, { balanceInBase: string; asOf: Date }>();
   for (const snapshot of balances)
     if (accountIds.has(snapshot.accountId) && !latestBalances.has(snapshot.accountId))
-      latestBalances.set(snapshot.accountId, snapshot.balanceInBase);
+      latestBalances.set(snapshot.accountId, {
+        balanceInBase: snapshot.balanceInBase,
+        asOf: snapshot.asOf,
+      });
   const cash = accounts
     .filter(
       (account) =>
         account.type !== "CREDIT_CARD" && account.type !== "DEBT" && account.type !== "INVESTMENT",
     )
-    .map((account) => latestBalances.get(account.id) ?? "0");
+    .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
   const investments = accounts
     .filter((account) => account.type === "INVESTMENT")
-    .map((account) => latestBalances.get(account.id) ?? "0");
+    .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
   const debts = accounts
     .filter((account) => account.type === "DEBT")
-    .map((account) => latestBalances.get(account.id) ?? "0");
+    .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
   const bills = accounts
     .filter((account) => account.type === "CREDIT_CARD")
-    .map((account) => latestBalances.get(account.id) ?? "0");
+    .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
 
   return {
     workspaceIds,
     accounts,
+    accountBalances: Object.fromEntries(latestBalances),
     goals,
     recent: transactions.slice(0, 8),
     totals: calculateReportTotals(transactions),
@@ -75,6 +84,7 @@ export async function getDashboardSnapshot(userId: string) {
       openCardBills: bills,
       debts,
     }),
+    netWorthComplete: accounts.every((account) => latestBalances.has(account.id)),
   };
 }
 
@@ -83,9 +93,21 @@ export async function getTransactionsForUser(userId: string) {
   const workspaceIds = memberships.map(({ workspace }) => workspace.id);
   if (!workspaceIds.length) return [];
 
-  return getDb().query.transactions.findMany({
-    where: (transaction, { inArray }) => inArray(transaction.workspaceId, workspaceIds),
-    orderBy: (transaction, { desc }) => [desc(transaction.occurredAt)],
-    limit: 500,
-  });
+  return getDb()
+    .select({
+      id: schema.transactions.id,
+      description: schema.transactions.description,
+      direction: schema.transactions.direction,
+      nature: schema.transactions.nature,
+      amountInBase: schema.transactions.amountInBase,
+      occurredAt: schema.transactions.occurredAt,
+      category: schema.categories.name,
+      classificationSource: schema.transactions.classificationSource,
+      reviewStatus: schema.transactions.reviewStatus,
+    })
+    .from(schema.transactions)
+    .leftJoin(schema.categories, eq(schema.transactions.categoryId, schema.categories.id))
+    .where(inArray(schema.transactions.workspaceId, workspaceIds))
+    .orderBy(desc(schema.transactions.occurredAt))
+    .limit(500);
 }
