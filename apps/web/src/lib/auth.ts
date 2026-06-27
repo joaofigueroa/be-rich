@@ -14,7 +14,7 @@ function createAuth() {
     nodeEnv: process.env.NODE_ENV,
   });
 
-  const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
 
   return betterAuth({
     appName: "Be Rich",
@@ -64,7 +64,7 @@ function createAuth() {
       storeIdentifier: "hashed",
     },
     plugins: [nextCookies()],
-    trustedOrigins: [baseURL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    trustedOrigins: [baseURL, "http://localhost:3001", "http://127.0.0.1:3001"],
   });
 }
 

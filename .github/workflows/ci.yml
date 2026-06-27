@@ -32,4 +32,4 @@ jobs:
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           BETTER_AUTH_SECRET: ci-only-secret-that-is-long-enough-for-build
-          BETTER_AUTH_URL: http://localhost:3000
+          BETTER_AUTH_URL: http://localhost:3001

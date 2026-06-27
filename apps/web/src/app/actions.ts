@@ -51,7 +51,7 @@ export async function inviteFamilyMemberAction(form: FormData) {
     userId: user.id,
     inviterName: user.name,
     email: z.email().parse(form.get("email")),
-    baseUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    baseUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
   });
   revalidatePath("/configuracoes");
 }
