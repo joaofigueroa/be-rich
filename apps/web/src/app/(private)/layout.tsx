@@ -29,7 +29,9 @@ export default async function PrivateLayout({ children }: { children: React.Reac
       <div className="min-w-0">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:px-8">
           <div className="flex items-center gap-3">
-            <AppNavigation />
+            <div className="lg:hidden">
+              <AppNavigation />
+            </div>
             <span className="lg:hidden">
               <Logo compact />
             </span>
