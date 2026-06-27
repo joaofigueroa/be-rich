@@ -9,13 +9,20 @@ import { requireUser } from "@/server/services/auth/session-service";
 import { getTransactionsPageForUser } from "@/server/services/transactions/transaction-service";
 
 type TransactionsPageProps = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; view?: string }>;
 };
 
 export default async function TransactionsPage({ searchParams }: TransactionsPageProps) {
   const user = await requireUser();
   const params = await searchParams;
-  const data = await getTransactionsPageForUser({ userId: user.id, page: params.page ?? 1 });
+  const view = ["ACCOUNT", "CREDIT_CARD"].includes(params.view ?? "")
+    ? (params.view as "ACCOUNT" | "CREDIT_CARD")
+    : "ALL";
+  const data = await getTransactionsPageForUser({
+    userId: user.id,
+    page: params.page ?? 1,
+    view,
+  });
   const firstItem = data.total ? (data.page - 1) * data.pageSize + 1 : 0;
   const lastItem = Math.min(data.page * data.pageSize, data.total);
   return (
@@ -34,6 +41,24 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
       />
       <Card>
         <CardContent className="p-0">
+          <nav aria-label="Visão das transações" className="flex gap-2 border-b p-4">
+            {[
+              ["ALL", "Consolidada"],
+              ["ACCOUNT", "Conta"],
+              ["CREDIT_CARD", "Cartão"],
+            ].map(([value, label]) => (
+              <Button
+                key={value}
+                asChild
+                size="sm"
+                variant={view === value ? "secondary" : "ghost"}
+              >
+                <Link href={value === "ALL" ? "/transacoes" : `/transacoes?view=${value}`}>
+                  {label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
           <div className="flex flex-col gap-3 border-b p-4 sm:flex-row">
             <label htmlFor="transaction-search" className="relative flex-1">
               <span className="sr-only">Buscar transações</span>
@@ -52,7 +77,11 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             </button>
           </div>
           {data.transactions.length ? (
-            <TransactionList transactions={data.transactions} categories={data.categories} />
+            <TransactionList
+              transactions={data.transactions}
+              categories={data.categories}
+              bills={data.bills}
+            />
           ) : (
             <div className="grid min-h-80 place-items-center p-8 text-center">
               <div>
@@ -74,7 +103,9 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
               <div className="flex items-center gap-2">
                 {data.page > 1 ? (
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/transacoes?page=${data.page - 1}`}>
+                    <Link
+                      href={`/transacoes?page=${data.page - 1}${view === "ALL" ? "" : `&view=${view}`}`}
+                    >
                       <ChevronLeft className="size-4" /> Anterior
                     </Link>
                   </Button>
@@ -88,7 +119,9 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                 </span>
                 {data.page < data.totalPages ? (
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/transacoes?page=${data.page + 1}`}>
+                    <Link
+                      href={`/transacoes?page=${data.page + 1}${view === "ALL" ? "" : `&view=${view}`}`}
+                    >
                       Próxima <ChevronRight className="size-4" />
                     </Link>
                   </Button>

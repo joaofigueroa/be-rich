@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 import { workspaces } from "./core";
-import { financialAccounts, institutions } from "./finance";
+import { creditCardBills, financialAccounts, institutions } from "./finance";
 
 export const importStatusEnum = pgEnum("import_status", [
   "UPLOADED",
@@ -36,6 +36,9 @@ export const importBatches = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
     accountId: uuid("account_id").references(() => financialAccounts.id, { onDelete: "set null" }),
+    creditCardBillId: uuid("credit_card_bill_id").references(() => creditCardBills.id, {
+      onDelete: "set null",
+    }),
     institutionId: uuid("institution_id").references(() => institutions.id, {
       onDelete: "set null",
     }),
@@ -63,6 +66,7 @@ export const importBatches = pgTable(
   (table) => [
     index("import_batches_workspace_id_idx").on(table.workspaceId),
     index("import_batches_account_id_idx").on(table.accountId),
+    index("import_batches_credit_card_bill_id_idx").on(table.creditCardBillId),
     index("import_batches_institution_id_idx").on(table.institutionId),
     index("import_batches_created_by_idx").on(table.createdBy),
     uniqueIndex("import_batches_workspace_file_hash_idx").on(table.workspaceId, table.fileHash),

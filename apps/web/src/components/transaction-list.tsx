@@ -34,15 +34,31 @@ const NATURE_LABELS = {
 type TransactionItem = {
   id: string;
   workspaceId: string;
+  accountId: string;
+  account: string;
+  accountType: string;
   description: string;
   direction: "CREDIT" | "DEBIT";
   nature: TransactionNature;
   amountInBase: string;
   occurredAt: Date;
   categoryId: string | null;
+  billId: string | null;
+  settlesBillId: string | null;
   category: string | null;
   reviewStatus: "NOT_REQUIRED" | "PENDING" | "CONFIRMED";
   notes: string | null;
+};
+
+type BillOption = {
+  id: string;
+  workspaceId: string;
+  accountId: string;
+  accountName: string;
+  referenceMonth: string | null;
+  periodEnd: string | null;
+  total: string;
+  status: string;
 };
 
 type CategoryOption = {
@@ -56,14 +72,16 @@ type CategoryOption = {
 type TransactionListProps = {
   transactions: TransactionItem[];
   categories: CategoryOption[];
+  bills: BillOption[];
 };
 
-export function TransactionList({ transactions, categories }: TransactionListProps) {
+export function TransactionList({ transactions, categories, bills }: TransactionListProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<TransactionItem | null>(null);
   const [nature, setNature] = useState<TransactionNature>("CONSUMPTION");
   const [categoryId, setCategoryId] = useState("");
   const [notes, setNotes] = useState("");
+  const [settlesBillId, setSettlesBillId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -72,6 +90,7 @@ export function TransactionList({ transactions, categories }: TransactionListPro
     setNature(transaction.nature);
     setCategoryId(transaction.categoryId ?? "");
     setNotes(transaction.notes ?? "");
+    setSettlesBillId(transaction.settlesBillId ?? "");
     setError(null);
   }
 
@@ -80,6 +99,7 @@ export function TransactionList({ transactions, categories }: TransactionListPro
     const categoryType = categoryTypeForNature(nextNature);
     const currentCategory = categories.find((category) => category.id === categoryId);
     if (!categoryType || currentCategory?.type !== categoryType) setCategoryId("");
+    if (nextNature !== "CARD_PAYMENT") setSettlesBillId("");
   }
 
   function submitUpdate(event: FormEvent<HTMLFormElement>) {
@@ -92,6 +112,7 @@ export function TransactionList({ transactions, categories }: TransactionListPro
           transactionId: selected.id,
           nature,
           categoryId: categoryId || null,
+          settlesBillId: settlesBillId || null,
           notes: notes || null,
         });
         setSelected(null);
@@ -117,6 +138,9 @@ export function TransactionList({ transactions, categories }: TransactionListPro
     group.push(category);
     categoryGroups.set(category.parentName, group);
   }
+  const availableBills = selected
+    ? bills.filter((bill) => bill.workspaceId === selected.workspaceId)
+    : [];
 
   return (
     <>
@@ -147,6 +171,15 @@ export function TransactionList({ transactions, categories }: TransactionListPro
                 {transaction.reviewStatus === "PENDING" && transaction.category
                   ? " · revisar sugestão"
                   : ""}
+                {` · ${transaction.account}`}
+                {transaction.billId
+                  ? ` · Fatura ${bills.find((bill) => bill.id === transaction.billId)?.referenceMonth ?? "importada"}`
+                  : ""}
+                {transaction.settlesBillId
+                  ? ` · Quita fatura ${bills.find((bill) => bill.id === transaction.settlesBillId)?.referenceMonth ?? "importada"}`
+                  : transaction.nature === "CARD_PAYMENT"
+                    ? " · conciliação pendente"
+                    : ""}
               </span>
             </span>
             <span className="hidden text-sm text-muted-foreground sm:block">
@@ -186,6 +219,35 @@ export function TransactionList({ transactions, categories }: TransactionListPro
                 ))}
               </select>
             </div>
+            {nature === "CARD_PAYMENT" ? (
+              <div className="space-y-2">
+                <Label htmlFor="transaction-bill">Fatura quitada</Label>
+                <select
+                  id="transaction-bill"
+                  value={settlesBillId}
+                  onChange={(event) => setSettlesBillId(event.target.value)}
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Pagamento ainda não conciliado</option>
+                  {availableBills.map((bill) => (
+                    <option
+                      key={bill.id}
+                      value={bill.id}
+                      disabled={bill.status === "PAID" && bill.id !== selected?.settlesBillId}
+                    >
+                      {bill.accountName} · {bill.referenceMonth ?? bill.periodEnd ?? "Fatura"} ·{" "}
+                      {formatCurrency(bill.total)}
+                      {bill.status === "PAID" && bill.id !== selected?.settlesBillId
+                        ? " · já conciliada"
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  O pagamento permanece no fluxo de caixa, sem ser somado novamente ao consumo.
+                </p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="transaction-category">Categoria</Label>
               <select

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, getDb, gte, inArray, lte, schema, sql } from "@be-rich/database";
+import { and, eq, getDb, gte, inArray, lte, ne, schema, sql } from "@be-rich/database";
 import { z } from "zod";
 import { calculateReportTotals } from "@/server/domain/financial-calculator";
 import { buildReportChartData } from "@/server/domain/report-charts";
@@ -10,6 +10,7 @@ const ReportInputSchema = z.object({
   startDate: z.iso.date().optional(),
   endDate: z.iso.date().optional(),
   dateBasis: z.enum(["OCCURRED", "POSTED"]).default("OCCURRED"),
+  accountScope: z.enum(["ALL", "ACCOUNT", "CREDIT_CARD"]).default("ALL"),
 });
 
 export async function getReportData(userId: string, rawInput: unknown) {
@@ -28,6 +29,7 @@ export async function getReportData(userId: string, rawInput: unknown) {
       startDate: requestedInput.startDate ?? fallbackStart,
       endDate: requestedInput.endDate ?? today,
       dateBasis: requestedInput.dateBasis,
+      accountScope: requestedInput.accountScope,
     };
     return {
       input,
@@ -38,18 +40,33 @@ export async function getReportData(userId: string, rawInput: unknown) {
     };
   }
 
+  const accountScopeCondition =
+    requestedInput.accountScope === "CREDIT_CARD"
+      ? eq(schema.financialAccounts.type, "CREDIT_CARD")
+      : requestedInput.accountScope === "ACCOUNT"
+        ? ne(schema.financialAccounts.type, "CREDIT_CARD")
+        : undefined;
+  const workspaceCondition = accountScopeCondition
+    ? and(inArray(schema.transactions.workspaceId, workspaceIds), accountScopeCondition)
+    : inArray(schema.transactions.workspaceId, workspaceIds);
+
   const [availablePeriod] = await getDb()
     .select({
       startDate: sql<string | null>`to_char(min(${dateColumn}), 'YYYY-MM-DD')`,
       endDate: sql<string | null>`to_char(max(${dateColumn}), 'YYYY-MM-DD')`,
     })
     .from(schema.transactions)
-    .where(inArray(schema.transactions.workspaceId, workspaceIds));
+    .innerJoin(
+      schema.financialAccounts,
+      eq(schema.transactions.accountId, schema.financialAccounts.id),
+    )
+    .where(workspaceCondition);
 
   const input = {
     startDate: requestedInput.startDate ?? availablePeriod?.startDate ?? fallbackStart,
     endDate: requestedInput.endDate ?? availablePeriod?.endDate ?? today,
     dateBasis: requestedInput.dateBasis,
+    accountScope: requestedInput.accountScope,
   };
   if (input.startDate > input.endDate) {
     throw new Error("A data inicial deve ser anterior ou igual à data final");
@@ -68,6 +85,7 @@ export async function getReportData(userId: string, rawInput: unknown) {
       amountInBase: schema.transactions.amountInBase,
       category: schema.categories.name,
       account: schema.financialAccounts.name,
+      accountType: schema.financialAccounts.type,
       institution: schema.institutions.name,
     })
     .from(schema.transactions)
@@ -82,7 +100,7 @@ export async function getReportData(userId: string, rawInput: unknown) {
     )
     .where(
       and(
-        inArray(schema.transactions.workspaceId, workspaceIds),
+        workspaceCondition,
         gte(dateColumn, new Date(`${input.startDate}T00:00:00.000Z`)),
         lte(dateColumn, new Date(`${input.endDate}T23:59:59.999Z`)),
       ),

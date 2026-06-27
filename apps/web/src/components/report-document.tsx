@@ -34,7 +34,12 @@ export function ReportDocument({ report }: { report: Report }) {
         <Text style={styles.title}>Be Rich · Relatório financeiro</Text>
         <Text style={styles.subtitle}>
           {report.input.startDate} a {report.input.endDate} · Base{" "}
-          {report.input.dateBasis === "OCCURRED" ? "ocorrência" : "lançamento"}
+          {report.input.dateBasis === "OCCURRED" ? "ocorrência" : "lançamento"} · Visão{" "}
+          {report.input.accountScope === "ACCOUNT"
+            ? "conta"
+            : report.input.accountScope === "CREDIT_CARD"
+              ? "cartão"
+              : "consolidada"}
         </Text>
         <View style={styles.metrics}>
           <Metric label="Receitas" value={formatCurrency(report.totals.income)} />

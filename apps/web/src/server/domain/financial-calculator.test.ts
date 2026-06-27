@@ -16,6 +16,25 @@ describe("financial calculator", () => {
     expect(totals.cashFlow).toBe("7250.00");
   });
 
+  it("conta compras do cartão no consumo, mas somente a quitação no fluxo de caixa", () => {
+    const totals = calculateReportTotals([
+      {
+        amountInBase: "800",
+        direction: "DEBIT",
+        nature: "CONSUMPTION",
+        accountType: "CREDIT_CARD",
+      },
+      {
+        amountInBase: "800",
+        direction: "DEBIT",
+        nature: "CARD_PAYMENT",
+        accountType: "CHECKING",
+      },
+    ]);
+    expect(totals.consumption).toBe("800.00");
+    expect(totals.cashFlow).toBe("-800.00");
+  });
+
   it("calcula patrimônio líquido", () => {
     expect(
       calculateNetWorth({

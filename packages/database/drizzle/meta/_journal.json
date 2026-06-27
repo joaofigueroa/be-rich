@@ -15,6 +15,13 @@
       "when": 1782527686187,
       "tag": "0001_mushy_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782592961129,
+      "tag": "0002_abandoned_quicksilver",
+      "breakpoints": true
     }
   ]
 }

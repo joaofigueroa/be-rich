@@ -34,7 +34,7 @@ export default async function ImportPage() {
           <CardContent>
             <ImportWizard
               workspaceId={workspace.id}
-              accounts={accounts.map(({ id, name }) => ({ id, name }))}
+              accounts={accounts.map(({ id, name, type }) => ({ id, name, type }))}
             />
           </CardContent>
         </Card>

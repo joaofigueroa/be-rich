@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, getDb, inArray, schema } from "@be-rich/database";
+import { and, desc, eq, getDb, gte, inArray, schema } from "@be-rich/database";
 import { subDays } from "date-fns";
 import { calculateNetWorth, calculateReportTotals } from "@/server/domain/financial-calculator";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
@@ -21,15 +21,29 @@ export async function getDashboardSnapshot(userId: string) {
     };
 
   const [transactions, accounts, goals] = await Promise.all([
-    getDb().query.transactions.findMany({
-      where: (transaction, { and, gte, inArray }) =>
+    getDb()
+      .select({
+        id: schema.transactions.id,
+        amountInBase: schema.transactions.amountInBase,
+        direction: schema.transactions.direction,
+        nature: schema.transactions.nature,
+        accountType: schema.financialAccounts.type,
+        occurredAt: schema.transactions.occurredAt,
+        description: schema.transactions.description,
+      })
+      .from(schema.transactions)
+      .innerJoin(
+        schema.financialAccounts,
+        eq(schema.transactions.accountId, schema.financialAccounts.id),
+      )
+      .where(
         and(
-          inArray(transaction.workspaceId, workspaceIds),
-          gte(transaction.occurredAt, subDays(new Date(), 30)),
+          inArray(schema.transactions.workspaceId, workspaceIds),
+          gte(schema.transactions.occurredAt, subDays(new Date(), 30)),
         ),
-      orderBy: (transaction, { desc }) => [desc(transaction.occurredAt)],
-      limit: 100,
-    }),
+      )
+      .orderBy(desc(schema.transactions.occurredAt))
+      .limit(100),
     getDb().query.financialAccounts.findMany({
       where: (account, { and, eq, inArray }) =>
         and(inArray(account.workspaceId, workspaceIds), eq(account.active, true)),

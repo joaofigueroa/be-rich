@@ -36,4 +36,28 @@ describe("buildReportChartData", () => {
     ]);
     expect(data.categories).toEqual([{ category: "Alimentação", amount: 1000 }]);
   });
+
+  it("não duplica no caixa as compras presentes na fatura", () => {
+    const data = buildReportChartData([
+      {
+        occurredAt: new Date("2026-01-10T00:00:00.000Z"),
+        postedAt: new Date("2026-01-10T00:00:00.000Z"),
+        direction: "DEBIT",
+        nature: "CONSUMPTION",
+        amountInBase: "500",
+        category: "Mercado",
+        accountType: "CREDIT_CARD",
+      },
+      {
+        occurredAt: new Date("2026-01-20T00:00:00.000Z"),
+        postedAt: new Date("2026-01-20T00:00:00.000Z"),
+        direction: "DEBIT",
+        nature: "CARD_PAYMENT",
+        amountInBase: "500",
+        category: null,
+        accountType: "CHECKING",
+      },
+    ]);
+    expect(data.timeline[0]).toMatchObject({ consumption: 500, cashFlow: -500 });
+  });
 });

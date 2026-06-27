@@ -200,6 +200,9 @@ export const creditCardBills = pgTable(
       .notNull()
       .references(() => financialAccounts.id, { onDelete: "cascade" }),
     externalId: text("external_id"),
+    referenceMonth: text("reference_month"),
+    periodStart: date("period_start"),
+    periodEnd: date("period_end"),
     closingDate: date("closing_date"),
     dueDate: date("due_date"),
     total: money("total").notNull(),
@@ -224,6 +227,9 @@ export const transactions = pgTable(
       .notNull()
       .references(() => financialAccounts.id, { onDelete: "cascade" }),
     billId: uuid("bill_id").references(() => creditCardBills.id, { onDelete: "set null" }),
+    settlesBillId: uuid("settles_bill_id").references(() => creditCardBills.id, {
+      onDelete: "set null",
+    }),
     transferPairId: uuid("transfer_pair_id"),
     refundOfId: uuid("refund_of_id"),
     categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
@@ -275,6 +281,7 @@ export const transactions = pgTable(
     index("transactions_workspace_occurred_idx").on(table.workspaceId, table.occurredAt),
     index("transactions_account_id_idx").on(table.accountId),
     index("transactions_bill_id_idx").on(table.billId),
+    index("transactions_settles_bill_id_idx").on(table.settlesBillId),
     index("transactions_category_id_idx").on(table.categoryId),
     index("transactions_transfer_pair_id_idx").on(table.transferPairId),
     index("transactions_refund_of_id_idx").on(table.refundOfId),

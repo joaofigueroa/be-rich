@@ -4,6 +4,9 @@ import { decimal, money, signedAmount, sum } from "./money";
 export const LedgerEntrySchema = z.object({
   amountInBase: z.string(),
   direction: z.enum(["CREDIT", "DEBIT"]),
+  accountType: z
+    .enum(["CHECKING", "SAVINGS", "PAYMENT", "CREDIT_CARD", "INVESTMENT", "CASH", "DEBT"])
+    .optional(),
   nature: z.enum([
     "INCOME",
     "CONSUMPTION",
@@ -33,7 +36,11 @@ export function calculateReportTotals(entries: LedgerEntry[]) {
   const refunds = sum(
     entries.filter((entry) => entry.nature === "REFUND").map((entry) => entry.amountInBase),
   );
-  const cashFlow = sum(entries.map((entry) => signedAmount(entry.direction, entry.amountInBase)));
+  const cashFlow = sum(
+    entries
+      .filter((entry) => entry.accountType !== "CREDIT_CARD")
+      .map((entry) => signedAmount(entry.direction, entry.amountInBase)),
+  );
 
   return {
     income: money(income),

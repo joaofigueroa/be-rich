@@ -12,9 +12,16 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; type: string };
 type Preview = {
-  batch: { id: string; filename: string; totalRows: number; validRows: number; warnings: string[] };
+  batch: {
+    id: string;
+    filename: string;
+    product: "ACCOUNT" | "CREDIT_CARD";
+    totalRows: number;
+    validRows: number;
+    warnings: string[];
+  };
   rows: Array<{
     id: string;
     rowNumber: number;
@@ -188,7 +195,12 @@ function Review({
   onConfirm: (id: string) => void;
   onBack: () => void;
 }) {
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const compatibleAccounts = accounts.filter((account) =>
+    preview.batch.product === "CREDIT_CARD"
+      ? account.type === "CREDIT_CARD"
+      : account.type !== "CREDIT_CARD",
+  );
+  const [accountId, setAccountId] = useState(compatibleAccounts[0]?.id ?? "");
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -205,13 +217,23 @@ function Review({
           className="h-10 rounded-lg border bg-background px-3 text-sm"
         >
           <option value="">Selecione a conta</option>
-          {accounts.map((account) => (
+          {compatibleAccounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
             </option>
           ))}
         </select>
       </div>
+      {!compatibleAccounts.length ? (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm"
+        >
+          {preview.batch.product === "CREDIT_CARD"
+            ? "Crie uma conta do tipo cartão de crédito antes de confirmar esta fatura."
+            : "Crie uma conta corrente ou de pagamento antes de confirmar este extrato."}
+        </p>
+      ) : null}
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[620px] text-sm">
           <thead className="bg-muted/60 text-left text-xs text-muted-foreground">

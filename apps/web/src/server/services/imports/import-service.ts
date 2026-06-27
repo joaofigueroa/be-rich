@@ -102,5 +102,11 @@ export async function prepareImportConfirmation(input: {
       and(eq(account.id, data.accountId), eq(account.workspaceId, review.batch.workspaceId)),
   });
   if (!account) throw new Error("A conta não pertence ao espaço selecionado");
+  if (review.batch.product === "CREDIT_CARD" && account.type !== "CREDIT_CARD") {
+    throw new Error("Selecione uma conta do tipo cartão de crédito para importar a fatura");
+  }
+  if (review.batch.product === "ACCOUNT" && account.type === "CREDIT_CARD") {
+    throw new Error("Selecione uma conta corrente ou de pagamento para importar o extrato");
+  }
   return setImportAccount(data.batchId, data.accountId);
 }

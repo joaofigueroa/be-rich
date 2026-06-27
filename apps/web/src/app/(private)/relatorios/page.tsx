@@ -12,6 +12,7 @@ type ReportsPageProps = {
     startDate?: string | string[];
     endDate?: string | string[];
     dateBasis?: string | string[];
+    accountScope?: string | string[];
   }>;
 };
 
@@ -26,6 +27,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     startDate: singleValue(params.startDate),
     endDate: singleValue(params.endDate),
     dateBasis: singleValue(params.dateBasis),
+    accountScope: singleValue(params.accountScope),
   });
   const exportQuery = new URLSearchParams(report.input).toString();
 
@@ -53,7 +55,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <Card className="mb-4">
         <CardContent className="p-5">
-          <form className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end" method="get">
+          <form
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] xl:items-end"
+            method="get"
+          >
             <label className="space-y-2 text-sm font-medium">
               Data inicial
               <input
@@ -85,6 +90,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               >
                 <option value="OCCURRED">Data da compra/ocorrência</option>
                 <option value="POSTED">Data de lançamento</option>
+              </select>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
+              Visão
+              <select
+                className="block h-10 w-full rounded-lg border bg-background px-3 font-normal"
+                name="accountScope"
+                defaultValue={report.input.accountScope}
+              >
+                <option value="ALL">Consolidada</option>
+                <option value="ACCOUNT">Conta bancária</option>
+                <option value="CREDIT_CARD">Cartão de crédito</option>
               </select>
             </label>
             <Button type="submit">Aplicar filtros</Button>

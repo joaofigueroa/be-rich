@@ -1,12 +1,17 @@
 import { createHash } from "node:crypto";
 import { eq, getDb, schema } from "@be-rich/database";
 import { classificationReviewStatus, matchRule } from "@/server/domain/classification";
+import {
+  ensureCreditCardBillForImport,
+  reconcileCreditCardBills,
+} from "@/server/services/billing/billing-service";
 import { classifyWithAi } from "@/server/services/classification/ai-classifier";
 import { NormalizedTransactionSchema } from "@/types/financial";
 
 export async function processImportWorkflow(batchId: string) {
   "use workflow";
   const transactionIds = await persistImportStep(batchId);
+  await reconcileBillsStep(batchId);
   await categorizeTransactionsStep(transactionIds);
   await markImportCompletedStep(batchId, transactionIds.length);
   return { batchId, transactionIds };
@@ -154,6 +159,7 @@ async function persistImportStep(batchId: string) {
     where: eq(schema.importBatches.id, batchId),
   });
   if (!batch?.accountId) throw new Error("Importação sem conta de destino");
+  const bill = await ensureCreditCardBillForImport(batch.id);
   await getDb()
     .update(schema.importBatches)
     .set({ status: "PROCESSING", updatedAt: new Date(), error: null })
@@ -171,6 +177,7 @@ async function persistImportStep(batchId: string) {
       .values({
         workspaceId: batch.workspaceId,
         accountId: batch.accountId,
+        billId: bill?.id,
         origin: "MANUAL_IMPORT",
         externalId: transaction.externalId,
         fingerprint: row.fingerprint,
@@ -207,6 +214,15 @@ async function persistImportStep(batchId: string) {
     .set({ importedRows: ids.length, duplicateRows: duplicates, updatedAt: new Date() })
     .where(eq(schema.importBatches.id, batchId));
   return ids;
+}
+
+async function reconcileBillsStep(batchId: string) {
+  "use step";
+  const batch = await getDb().query.importBatches.findFirst({
+    columns: { workspaceId: true },
+    where: eq(schema.importBatches.id, batchId),
+  });
+  if (batch) await reconcileCreditCardBills(batch.workspaceId);
 }
 
 async function markImportCompletedStep(batchId: string, importedRows: number) {

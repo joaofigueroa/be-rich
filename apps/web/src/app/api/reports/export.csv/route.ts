@@ -11,6 +11,7 @@ export async function GET(request: Request) {
       startDate: url.searchParams.get("startDate") ?? undefined,
       endDate: url.searchParams.get("endDate") ?? undefined,
       dateBasis: url.searchParams.get("dateBasis") ?? undefined,
+      accountScope: url.searchParams.get("accountScope") ?? undefined,
     });
     const csv = toCsv(
       report.rows.map((row) => ({
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
         data_lancamento: row.postedAt.toISOString(),
         descricao: row.description,
         conta: row.account,
+        tipo_conta: row.accountType,
         instituicao: row.institution,
         categoria: row.category,
         natureza: row.nature,
