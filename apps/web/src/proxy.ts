@@ -22,7 +22,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (pathname === "/entrar" && sessionCookie) {
+  if ((pathname === "/entrar" || pathname === "/cadastro") && sessionCookie) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

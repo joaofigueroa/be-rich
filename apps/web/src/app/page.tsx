@@ -29,7 +29,7 @@ export default function Home() {
             <Link href="/entrar">Entrar</Link>
           </Button>
           <Button asChild>
-            <Link href="/entrar">
+            <Link href="/cadastro">
               Começar agora <ArrowRight className="size-4" />
             </Link>
           </Button>
@@ -50,7 +50,7 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link href="/entrar">
+              <Link href="/cadastro">
                 Organizar minhas finanças <ArrowRight className="size-4" />
               </Link>
             </Button>

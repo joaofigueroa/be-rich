@@ -2,9 +2,7 @@ import { getDb, schema } from "@be-rich/database";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { magicLink } from "better-auth/plugins";
 import { resolveAuthSecret } from "@/lib/auth-secret";
-import { sendMagicLinkEmail } from "@/lib/email";
 import { loadRuntimeEnv } from "@/lib/runtime-env";
 import { ensurePersonalWorkspace } from "@/server/services/workspaces/workspace-service";
 
@@ -36,6 +34,13 @@ function createAuth() {
     advanced: {
       database: { generateId: false },
     },
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: true,
+      requireEmailVerification: false,
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+    },
     databaseHooks: {
       user: {
         create: {
@@ -51,22 +56,14 @@ function createAuth() {
       window: 60,
       max: 100,
       customRules: {
-        "/sign-in/magic-link": { window: 900, max: 5 },
+        "/sign-in/email": { window: 900, max: 10 },
+        "/sign-up/email": { window: 900, max: 5 },
       },
     },
     verification: {
       storeIdentifier: "hashed",
     },
-    plugins: [
-      magicLink({
-        expiresIn: 900,
-        storeToken: "hashed",
-        sendMagicLink: async ({ email, url }) => {
-          await sendMagicLinkEmail({ email, url });
-        },
-      }),
-      nextCookies(),
-    ],
+    plugins: [nextCookies()],
     trustedOrigins: [baseURL, "http://localhost:3000", "http://127.0.0.1:3000"],
   });
 }

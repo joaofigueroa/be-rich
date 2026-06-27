@@ -2,17 +2,25 @@ export type EmailDeliveryMode = "console" | "resend";
 
 const RESEND_TEST_FROM = "Be Rich <onboarding@resend.dev>";
 
-export function resolveEmailDelivery(input: {
-  mode?: string;
-  from?: string;
-  nodeEnv?: string;
-  hasApiKey: boolean;
-}) {
+const UNVERIFIABLE_SENDER_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "hotmail.com",
+  "icloud.com",
+  "outlook.com",
+  "yahoo.com",
+]);
+
+function senderDomain(from: string) {
+  return from.match(/@([^>\s]+)>?$/)?.[1]?.toLowerCase();
+}
+
+export function resolveEmailDelivery(input: { mode?: string; from?: string; nodeEnv?: string }) {
   const requestedMode = input.mode?.trim().toLowerCase();
   const mode: EmailDeliveryMode =
     requestedMode === "console" || requestedMode === "resend"
       ? requestedMode
-      : input.nodeEnv === "production" || input.hasApiKey
+      : input.nodeEnv === "production"
         ? "resend"
         : "console";
 
@@ -21,8 +29,11 @@ export function resolveEmailDelivery(input: {
   }
 
   const configuredFrom = input.from?.trim();
+  const domain = configuredFrom ? senderDomain(configuredFrom) : undefined;
   const from =
-    !configuredFrom || /@example\.(com|org|net)>?$/i.test(configuredFrom)
+    !configuredFrom ||
+    /@example\.(com|org|net)>?$/i.test(configuredFrom) ||
+    (domain ? UNVERIFIABLE_SENDER_DOMAINS.has(domain) : false)
       ? RESEND_TEST_FROM
       : configuredFrom;
 

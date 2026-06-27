@@ -7,7 +7,7 @@ Gestão financeira pessoal e familiar com livro financeiro conciliável, patrim�
 - Turborepo + pnpm + TypeScript + Biome
 - Next.js App Router, React 19, Tailwind 4 e componentes shadcn-inspired
 - Neon/Postgres + Drizzle ORM + migrations UUIDv7
-- Better Auth passwordless + Resend
+- Better Auth com e-mail e senha; Resend somente para convites familiares
 - Vercel Blob privado, Workflow e Cron
 - AI SDK + OpenRouter com saída estruturada Zod
 
@@ -29,7 +29,7 @@ As leituras seguem `Server Component → service → repository`. Escritas usam 
 3. Execute `pnpm install`, `pnpm db:migrate` e `pnpm dev`.
 4. Em outro terminal, quando necessário, execute `pnpm --filter @be-rich/web workflow:dev`.
 
-Sem domínio próprio, mantenha `EMAIL_DELIVERY_MODE=console` durante o desenvolvimento. O magic link e os convites serão impressos somente no terminal local. Para testar a entrega pelo Resend, use `EMAIL_DELIVERY_MODE=resend` e `Be Rich <onboarding@resend.dev>`; o domínio de testes do Resend entrega apenas para o e-mail associado à sua conta.
+Cadastro e login usam e-mail e senha e não dependem do Resend. Sem domínio próprio, mantenha `EMAIL_DELIVERY_MODE=console`; convites familiares serão impressos somente no terminal local. Não use um endereço Gmail como `EMAIL_FROM`: o domínio `gmail.com` pertence ao Google e não pode ser verificado no Resend. Para testar a entrega de convites, use `EMAIL_DELIVERY_MODE=resend` e `EMAIL_FROM=Be Rich <onboarding@resend.dev>`; o domínio de testes do Resend entrega apenas para o e-mail associado à sua conta.
 
 Comandos úteis:
 
