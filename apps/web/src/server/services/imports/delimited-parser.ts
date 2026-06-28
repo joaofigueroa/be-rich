@@ -167,6 +167,18 @@ function isC6AccountHeaderRow(row: readonly unknown[]) {
   );
 }
 
+function isC6CreditCardHeaderRow(row: readonly unknown[]) {
+  return (
+    rowHasAlias(row, ["data de compra"]) &&
+    rowHasAlias(row, ["nome no cartao"]) &&
+    rowHasAlias(row, ["final do cartao"]) &&
+    rowHasAlias(row, ["categoria"]) &&
+    rowHasAlias(row, ["descricao"]) &&
+    rowHasAlias(row, ["parcela"]) &&
+    rowHasAlias(row, ["valor (em r$)"])
+  );
+}
+
 function c6AccountMetadataFromRows(metadataRows: unknown[][]) {
   const metadataText = metadataRows
     .map((row) => row.map((cell) => String(cell ?? "")).join(" "))
@@ -194,6 +206,21 @@ function c6AccountMetadataFromRows(metadataRows: unknown[][]) {
   };
 }
 
+function c6CardDescription(row: Record<string, unknown>) {
+  const categoryKey = findKey(row, ["categoria"]);
+  const descriptionKey = findKey(row, ["descricao", "descrição"]);
+  const category = categoryKey ? String(row[categoryKey] ?? "").trim() : "";
+  const description = descriptionKey ? String(row[descriptionKey] ?? "").trim() : "";
+  if (category && category !== "-" && description) return `${description} · ${category}`;
+  return description || category;
+}
+
+function c6CardInstallment(row: Record<string, unknown>) {
+  const installmentKey = findKey(row, ["parcela"]);
+  const raw = installmentKey ? String(row[installmentKey] ?? "").trim() : "";
+  return raw && !/^unica$/i.test(canonical(raw)) ? ` (${raw})` : "";
+}
+
 function c6Description(row: Record<string, unknown>, direction: "CREDIT" | "DEBIT") {
   const titleKey = findKey(row, ["titulo", "título"]);
   const descriptionKey = findKey(row, ["descricao", "descrição"]);
@@ -208,6 +235,48 @@ function c6Description(row: Record<string, unknown>, direction: "CREDIT" | "DEBI
     return direction === "CREDIT" ? `Resgate · ${base}` : `Aplicação · ${base}`;
   }
   return base;
+}
+
+function parseC6CreditCardRows(
+  rows: Record<string, unknown>[],
+  input: StatementParseInput,
+  firstDataLine: number,
+) {
+  const warnings: string[] = [];
+  const transactions: NormalizedTransaction[] = [];
+
+  rows.forEach((row, index) => {
+    try {
+      const date = pick(row, "date", input.mapping);
+      const purchaseDateKey = findKey(row, ["data de compra"]);
+      const amountKey = findKey(row, ["valor (em r$)"]);
+      const cardLastFourKey = findKey(row, ["final do cartao"]);
+      const amount = parseMoney(amountKey ? row[amountKey] : undefined);
+      const direction = amount.isNegative() ? "CREDIT" : "DEBIT";
+      const description = `${c6CardDescription(row)}${c6CardInstallment(row)}`.trim();
+      const cardLastFour = cardLastFourKey ? String(row[cardLastFourKey] ?? "").trim() : "";
+
+      if ((date === undefined && !purchaseDateKey) || !description || amount.isZero()) {
+        throw new Error("Required C6 credit card columns were not detected");
+      }
+      transactions.push(
+        createNormalizedTransaction({
+          date: date ?? row[purchaseDateKey ?? ""],
+          description,
+          amount: amount.abs().toFixed(2),
+          externalId: cardLastFour ? `${cardLastFour}:${date}:${description}:${amount}` : undefined,
+          currency: input.currency ?? "BRL",
+          product: input.product,
+          direction,
+        }),
+      );
+    } catch (error) {
+      warnings.push(
+        `Linha ${firstDataLine + index}: ${error instanceof Error ? error.message : "falha de leitura"}`,
+      );
+    }
+  });
+  return { transactions, warnings };
 }
 
 function parseC6AccountRows(
@@ -251,6 +320,47 @@ function parseC6AccountRows(
     }
   });
   return { transactions, warnings };
+}
+
+function parseC6CreditCardStatement(
+  input: StatementParseInput,
+  text: string,
+  delimiter: "," | ";",
+): ParsedStatement | null {
+  if (input.institution !== "c6" || input.product !== "CREDIT_CARD") return null;
+  const table = parseCsv(text, {
+    columns: false,
+    skip_empty_lines: false,
+    delimiter,
+    relax_column_count: true,
+    trim: true,
+  }) as unknown[][];
+  const headerIndex = table.findIndex(isC6CreditCardHeaderRow);
+  if (headerIndex === -1) return null;
+  const headerRow = table[headerIndex];
+  if (!headerRow) throw new Error("Header row could not be read");
+  const headers = headerRow.map((cell) => String(cell ?? "").trim());
+  const rows = table
+    .slice(headerIndex + 1)
+    .filter((row) => row.some((cell) => String(cell ?? "").trim()))
+    .map((row) =>
+      Object.fromEntries(
+        headers.flatMap((header, index) => (header ? [[header, row[index]]] : [])),
+      ),
+    );
+  const firstDataLine = headerIndex + 2;
+  const { transactions, warnings } = parseC6CreditCardRows(rows, input, firstDataLine);
+
+  return {
+    parserKey: "delimited-csv:c6-credit-card",
+    parserVersion: "1.2.0",
+    institution: input.institution,
+    product: input.product,
+    account: { currency: input.currency ?? "BRL" },
+    transactions,
+    rawRows: rows,
+    warnings,
+  };
 }
 
 function parseC6AccountStatement(
@@ -370,6 +480,8 @@ export const csvStatementParser: StatementParser = {
   async parse(input) {
     const text = new TextDecoder("utf-8").decode(input.bytes).replace(/^\uFEFF/, "");
     const delimiter = detectDelimiter(text);
+    const c6CreditCardStatement = parseC6CreditCardStatement(input, text, delimiter);
+    if (c6CreditCardStatement) return c6CreditCardStatement;
     const c6AccountStatement = parseC6AccountStatement(input, text, delimiter);
     if (c6AccountStatement) return c6AccountStatement;
     const { rows, firstDataLine, metadataRows } = rowsFromDelimitedText(text, delimiter);

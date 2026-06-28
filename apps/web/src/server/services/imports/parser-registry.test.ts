@@ -118,6 +118,53 @@ describe("C6 account CSV with metadata preamble and split amount columns", () =>
   });
 });
 
+describe("C6 credit card CSV with semicolon layout", () => {
+  it("normaliza fatura CSV do cartão C6 sem afetar extratos de conta", async () => {
+    const bytes = await readFile(
+      fileURLToPath(new URL("./__fixtures__/c6-card-statement.csv", import.meta.url)),
+    );
+    const parsed = await parseStatement({
+      bytes,
+      filename: "Fatura_2026-01-01.csv",
+      contentType: "text/csv",
+      institution: "c6",
+      product: "CREDIT_CARD",
+    });
+
+    expect(parsed.parserKey).toBe("delimited-csv:c6-credit-card");
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.transactions).toHaveLength(5);
+    expect(parsed.transactions[0]).toMatchObject({
+      occurredAt: "2025-11-25T03:00:00.000Z",
+      description: "UBER UBER *TRIP HELP.U · Transporte",
+      direction: "DEBIT",
+      nature: "CONSUMPTION",
+      amount: "35.64",
+    });
+    expect(parsed.transactions[1]).toMatchObject({
+      description: "MLP    *MAGALU-KABUM · Elétrico (1/4)",
+      installmentNumber: 1,
+      totalInstallments: 4,
+      amount: "82.25",
+    });
+    expect(parsed.transactions[2]).toMatchObject({
+      description: "ASO_FRANCE · Entretenimento",
+      amount: "297.16",
+    });
+    expect(parsed.transactions[3]).toMatchObject({
+      description: "TAP WEB VIP · T&E Companhia aérea (3/10)",
+      installmentNumber: 3,
+      totalInstallments: 10,
+    });
+    expect(parsed.transactions[4]).toMatchObject({
+      description: "Inclusao de Pagamento",
+      direction: "CREDIT",
+      nature: "REFUND",
+      amount: "89.48",
+    });
+  });
+});
+
 describe("Inter credit card PDF text", () => {
   it("reconhece linhas com meses por extenso, cartões adicionais e créditos", async () => {
     const bytes = await readFile(
