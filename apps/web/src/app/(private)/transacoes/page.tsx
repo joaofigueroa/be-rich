@@ -1,9 +1,9 @@
 import { Button } from "@be-rich/ui/button";
 import { Card, CardContent } from "@be-rich/ui/card";
-import { ChevronLeft, ChevronRight, Search, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
-import { reprocessCategoriesAction } from "@/app/classification-actions";
 import { PageHeading } from "@/components/page-heading";
+import { ReprocessCategoriesButton } from "@/components/reprocess-categories-button";
 import { TransactionList } from "@/components/transaction-list";
 import { requireUser } from "@/server/services/auth/session-service";
 import { getTransactionsPageForUser } from "@/server/services/transactions/transaction-service";
@@ -91,13 +91,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
         eyebrow="Livro financeiro"
         title="Transações"
         description="Natureza financeira e categoria são independentes para evitar dupla contagem de transferências e faturas."
-        actions={
-          <form action={reprocessCategoriesAction}>
-            <Button type="submit" variant="outline">
-              <Sparkles className="size-4" /> Categorizar pendentes
-            </Button>
-          </form>
-        }
+        actions={<ReprocessCategoriesButton />}
       />
       <Card className="overflow-hidden">
         <CardContent className="p-0">

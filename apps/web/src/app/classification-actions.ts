@@ -11,7 +11,9 @@ export async function reprocessCategoriesAction() {
   const user = await requireUser();
   const memberships = await getUserWorkspaces(user.id);
   const workspaceIds = memberships.map(({ workspace }) => workspace.id);
-  if (!workspaceIds.length) return;
+  if (!workspaceIds.length) {
+    return { queued: 0, started: false as const, message: "Nenhum espaço disponível." };
+  }
 
   const pending = await getDb().query.transactions.findMany({
     columns: { id: true },
@@ -28,9 +30,23 @@ export async function reprocessCategoriesAction() {
       ),
     limit: 500,
   });
-  if (!pending.length) return;
+  if (!pending.length) {
+    return {
+      queued: 0,
+      started: false as const,
+      message: "Não há transações pendentes para reclassificar.",
+    };
+  }
 
   await start(reprocessClassificationsWorkflow, [pending.map(({ id }) => id)]);
   revalidatePath("/transacoes");
   revalidatePath("/relatorios");
+  return {
+    queued: pending.length,
+    started: true as const,
+    message:
+      pending.length === 1
+        ? "1 transação foi enviada para reclassificação."
+        : `${pending.length} transações foram enviadas para reclassificação.`,
+  };
 }
