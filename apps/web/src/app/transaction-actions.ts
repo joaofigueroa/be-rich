@@ -3,7 +3,11 @@
 import { and, eq, getDb, ne, schema } from "@be-rich/database";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { categoryTypeForNature, TRANSACTION_NATURES } from "@/server/domain/transaction-edit";
+import {
+  categoryTypeForNature,
+  reviewStatusForNature,
+  TRANSACTION_NATURES,
+} from "@/server/domain/transaction-edit";
 import { requireUser } from "@/server/services/auth/session-service";
 import { requireWorkspaceMembership } from "@/server/services/workspaces/workspace-service";
 
@@ -79,7 +83,7 @@ export async function updateTransactionAction(rawInput: unknown) {
       notes: input.notes || null,
       classificationSource: categoryId ? "MANUAL" : "NONE",
       classificationConfidence: categoryId ? "1.0000" : null,
-      reviewStatus: categoryId ? "CONFIRMED" : "PENDING",
+      reviewStatus: reviewStatusForNature(input.nature, categoryId),
       updatedAt: new Date(),
     })
     .where(eq(schema.transactions.id, transaction.id));

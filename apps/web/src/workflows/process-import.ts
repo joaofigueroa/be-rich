@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { eq, getDb, schema } from "@be-rich/database";
 import { classificationReviewStatus, matchRule } from "@/server/domain/classification";
+import { categoryTypeForNature } from "@/server/domain/transaction-edit";
 import {
   ensureCreditCardBillForImport,
   reconcileCreditCardBills,
@@ -29,12 +30,16 @@ export async function categorizeTransactionsStep(transactionIds: string[]) {
     const transaction = await getDb().query.transactions.findFirst({
       where: eq(schema.transactions.id, transactionId),
     });
+    if (!transaction) {
+      stats.skipped += 1;
+      continue;
+    }
     if (
-      !transaction ||
       !["CONSUMPTION", "INCOME", "INVESTMENT_CONTRIBUTION", "INVESTMENT_REDEMPTION"].includes(
         transaction.nature,
       )
     ) {
+      await ensureReviewStateForFinancialNature(transaction.id, transaction.nature);
       stats.skipped += 1;
       continue;
     }
@@ -176,6 +181,23 @@ async function applyClassification(
     .where(eq(schema.transactions.id, transactionId));
 }
 
+async function ensureReviewStateForFinancialNature(
+  transactionId: string,
+  nature: (typeof schema.transactions.$inferSelect)["nature"],
+) {
+  if (categoryTypeForNature(nature) !== null) return;
+  await getDb()
+    .update(schema.transactions)
+    .set({
+      categoryId: null,
+      classificationSource: "NONE",
+      classificationConfidence: null,
+      reviewStatus: "NOT_REQUIRED",
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.transactions.id, transactionId));
+}
+
 async function persistImportStep(batchId: string) {
   "use step";
   const batch = await getDb().query.importBatches.findFirst({
@@ -225,6 +247,9 @@ async function persistImportStep(batchId: string) {
         installmentNumber: transaction.installmentNumber,
         totalInstallments: transaction.totalInstallments,
         installmentGroup: transaction.installmentGroup,
+        classificationSource: "NONE",
+        classificationConfidence: null,
+        reviewStatus: categoryTypeForNature(transaction.nature) ? "PENDING" : "NOT_REQUIRED",
         createdBy: batch.createdBy,
       })
       .onConflictDoNothing()

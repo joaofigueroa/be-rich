@@ -4,6 +4,7 @@ import { and, desc, eq, getDb, gte, inArray, schema } from "@be-rich/database";
 import { subDays } from "date-fns";
 import { calculateNetWorth, calculateReportTotals } from "@/server/domain/financial-calculator";
 import { consolidateTechnicalCreditCardAccounts } from "@/server/services/accounts/account-consolidation-service";
+import { repairWorkspaceTransactionSemantics } from "@/server/services/transactions/transaction-semantics-service";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
 
 export async function getDashboardSnapshot(userId: string) {
@@ -22,6 +23,7 @@ export async function getDashboardSnapshot(userId: string) {
     };
 
   await consolidateTechnicalCreditCardAccounts(workspaceIds);
+  await repairWorkspaceTransactionSemantics(workspaceIds);
 
   const [transactions, accounts, goals, openBills] = await Promise.all([
     getDb()

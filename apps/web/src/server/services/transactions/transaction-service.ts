@@ -17,6 +17,7 @@ import {
   schema,
 } from "@be-rich/database";
 import { z } from "zod";
+import { repairWorkspaceTransactionSemantics } from "@/server/services/transactions/transaction-semantics-service";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
 
 const optionalUuid = z
@@ -90,6 +91,8 @@ export async function getTransactionsPageForUser(
       totalPages: 1,
     };
   }
+
+  await repairWorkspaceTransactionSemantics(workspaceIds);
 
   const viewCondition =
     input.view === "CREDIT_CARD"

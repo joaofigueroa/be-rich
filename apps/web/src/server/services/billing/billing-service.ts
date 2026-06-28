@@ -110,6 +110,8 @@ export async function reconcileCreditCardBills(workspaceId: string) {
       and(
         eq(schema.transactions.workspaceId, workspaceId),
         eq(schema.transactions.nature, "CARD_PAYMENT"),
+        eq(schema.transactions.direction, "DEBIT"),
+        isNull(schema.transactions.billId),
         isNull(schema.transactions.settlesBillId),
       ),
     );

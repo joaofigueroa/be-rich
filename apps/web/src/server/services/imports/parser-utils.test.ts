@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createNormalizedTransaction,
+  inferNature,
   sanitizeFinancialDescription,
   transactionFingerprint,
 } from "./parser-utils";
@@ -32,5 +33,14 @@ describe("parser utilities", () => {
     });
     expect(transaction.direction).toBe("DEBIT");
     expect(transactionFingerprint(transaction)).toBe(transactionFingerprint(transaction));
+  });
+
+  it("reconhece movimentações financeiras comuns sem deixá-las como consumo pendente", () => {
+    expect(inferNature("Resgate RDB", "CREDIT", "ACCOUNT")).toBe("INVESTMENT_REDEMPTION");
+    expect(inferNature("Aplicação RDB", "DEBIT", "ACCOUNT")).toBe("INVESTMENT_CONTRIBUTION");
+    expect(inferNature("Transferências entre contas próprias", "DEBIT", "ACCOUNT")).toBe(
+      "OWN_TRANSFER",
+    );
+    expect(inferNature("Juros remuneratórios", "DEBIT", "ACCOUNT")).toBe("INTEREST_FEE");
   });
 });

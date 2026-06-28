@@ -18,6 +18,7 @@ import {
 import { z } from "zod";
 import { calculateReportTotals } from "@/server/domain/financial-calculator";
 import { buildReportChartData } from "@/server/domain/report-charts";
+import { repairWorkspaceTransactionSemantics } from "@/server/services/transactions/transaction-semantics-service";
 import { getUserWorkspaces } from "@/server/services/workspaces/workspace-service";
 
 const optionalUuid = z
@@ -77,6 +78,8 @@ export async function getReportData(userId: string, rawInput: unknown) {
       categories: [],
     };
   }
+
+  await repairWorkspaceTransactionSemantics(workspaceIds);
 
   const accountScopeCondition =
     requestedInput.accountScope === "CREDIT_CARD"

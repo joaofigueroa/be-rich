@@ -24,3 +24,12 @@ export function categoryTypeForNature(nature: TransactionNature) {
   }
   return null;
 }
+
+export function natureRequiresCategory(nature: TransactionNature) {
+  return categoryTypeForNature(nature) !== null;
+}
+
+export function reviewStatusForNature(nature: TransactionNature, categoryId: string | null) {
+  if (!natureRequiresCategory(nature)) return "NOT_REQUIRED" as const;
+  return categoryId ? ("CONFIRMED" as const) : ("PENDING" as const);
+}

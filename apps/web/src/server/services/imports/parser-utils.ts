@@ -51,11 +51,21 @@ export function inferNature(
   if (/PAGAMENTO.*FATURA|PAGAMENTO ON LINE|PGTO.*CARTAO/.test(normalized)) {
     return "CARD_PAYMENT";
   }
-  if (/RESGATE|LIQUIDACAO.*INVEST/.test(normalized)) return "INVESTMENT_REDEMPTION";
-  if (/APLICACAO|INVESTIMENTO|CAIXINHA|COFRINHO/.test(normalized)) return "INVESTMENT_CONTRIBUTION";
+  if (/RESGATE|LIQUIDACAO.*INVEST|RDB/.test(normalized)) {
+    return direction === "CREDIT" ? "INVESTMENT_REDEMPTION" : "INVESTMENT_CONTRIBUTION";
+  }
+  if (/APLICACAO|INVESTIMENTO|CAIXINHA|COFRINHO/.test(normalized)) {
+    return "INVESTMENT_CONTRIBUTION";
+  }
   if (/ESTORNO|REEMBOLSO|CHARGEBACK/.test(normalized)) return "REFUND";
   if (/TARIFA|JUROS|IOF|ENCARGOS/.test(normalized)) return "INTEREST_FEE";
-  if (/TRANSFERENCIA ENTRE CONTAS|TRANSF CONTA/.test(normalized)) return "OWN_TRANSFER";
+  if (
+    /TRANSFERENCIAS?.*CONTAS?.*PROPRIAS?|TRANSFERENCIA ENTRE CONTAS|TRANSF(ERENCIA)?\s+CONTA/.test(
+      normalized,
+    )
+  ) {
+    return "OWN_TRANSFER";
+  }
   if (product === "CREDIT_CARD" && direction === "CREDIT") return "REFUND";
   if (direction === "CREDIT") return "INCOME";
   return product === "CREDIT_CARD" ? "CONSUMPTION" : "CONSUMPTION";
