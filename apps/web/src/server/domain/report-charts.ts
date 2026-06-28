@@ -15,6 +15,19 @@ type ReportChartRow = {
   category: string | null;
 };
 
+const CATEGORY_VISIBLE_NATURES = [
+  "CONSUMPTION",
+  "INVESTMENT_CONTRIBUTION",
+  "INVESTMENT_REDEMPTION",
+] as const;
+
+function categoryLabelForRow(row: ReportChartRow) {
+  if (row.category) return row.category;
+  if (row.nature === "INVESTMENT_CONTRIBUTION") return "Aportes em investimentos";
+  if (row.nature === "INVESTMENT_REDEMPTION") return "Resgates de investimentos";
+  return "Sem categoria";
+}
+
 export type ReportChartData = ReturnType<typeof buildReportChartData>;
 
 export function buildReportChartData(
@@ -60,7 +73,11 @@ export function buildReportChartData(
     if (row.nature === "INCOME") current.income = current.income.plus(amount);
     if (row.nature === "CONSUMPTION") {
       current.consumption = current.consumption.plus(amount);
-      const category = row.category ?? "Sem categoria";
+    }
+    if (
+      CATEGORY_VISIBLE_NATURES.includes(row.nature as (typeof CATEGORY_VISIBLE_NATURES)[number])
+    ) {
+      const category = categoryLabelForRow(row);
       categories.set(category, (categories.get(category) ?? new Decimal(0)).plus(amount));
       const details = categoryDetails.get(category) ?? [];
       details.push({

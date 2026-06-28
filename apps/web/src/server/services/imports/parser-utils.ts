@@ -48,18 +48,21 @@ export function inferNature(
   product: "ACCOUNT" | "CREDIT_CARD",
 ): TransactionNature {
   const normalized = normalizeDescription(description);
-  if (/PAGAMENTO.*FATURA|PGTO.*CARTAO/.test(normalized)) return "CARD_PAYMENT";
+  if (/PAGAMENTO.*FATURA|PAGAMENTO ON LINE|PGTO.*CARTAO/.test(normalized)) {
+    return "CARD_PAYMENT";
+  }
   if (/RESGATE|LIQUIDACAO.*INVEST/.test(normalized)) return "INVESTMENT_REDEMPTION";
   if (/APLICACAO|INVESTIMENTO|CAIXINHA|COFRINHO/.test(normalized)) return "INVESTMENT_CONTRIBUTION";
   if (/ESTORNO|REEMBOLSO|CHARGEBACK/.test(normalized)) return "REFUND";
   if (/TARIFA|JUROS|IOF|ENCARGOS/.test(normalized)) return "INTEREST_FEE";
   if (/TRANSFERENCIA ENTRE CONTAS|TRANSF CONTA/.test(normalized)) return "OWN_TRANSFER";
+  if (product === "CREDIT_CARD" && direction === "CREDIT") return "REFUND";
   if (direction === "CREDIT") return "INCOME";
   return product === "CREDIT_CARD" ? "CONSUMPTION" : "CONSUMPTION";
 }
 
 export function getInstallment(description: string) {
-  const match = description.match(/(?:PARC(?:ELA)?\s*)?(\d{1,2})\s*[/]\s*(\d{1,2})/i);
+  const match = description.match(/(?:PARC(?:ELA)?\s*)?(\d{1,2})\s*(?:[/]|DE)\s*(\d{1,2})/i);
   if (!match) return {};
   const installmentNumber = Number(match[1]);
   const totalInstallments = Number(match[2]);
@@ -94,10 +97,12 @@ export function createNormalizedTransaction(input: {
   currency: string;
   product: "ACCOUNT" | "CREDIT_CARD";
   externalId?: unknown;
+  direction?: "CREDIT" | "DEBIT";
 }): NormalizedTransaction {
   const parsedAmount = parseMoney(input.amount);
   const direction =
-    parsedAmount.isNegative() || input.product === "CREDIT_CARD" ? "DEBIT" : "CREDIT";
+    input.direction ??
+    (parsedAmount.isNegative() || input.product === "CREDIT_CARD" ? "DEBIT" : "CREDIT");
   const absolute = parsedAmount.abs().toFixed(2);
   const description = String(input.description ?? "").trim();
   const occurredAt = parseStatementDate(input.date);

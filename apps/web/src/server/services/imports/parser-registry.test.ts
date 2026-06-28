@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseStatement } from "./parser-registry";
+import { parsePdfText } from "./pdf-parser";
 
 const fixtures = [
   ["nubank-account.csv", "nubank", "ACCOUNT"],
@@ -65,6 +66,50 @@ describe("Inter account CSV with metadata preamble", () => {
       description: "Pagamento efetuado · Fatura cartão Inter",
       nature: "CARD_PAYMENT",
       amount: "2367.08",
+    });
+  });
+});
+
+describe("Inter credit card PDF text", () => {
+  it("reconhece linhas com meses por extenso, cartões adicionais e créditos", async () => {
+    const bytes = await readFile(
+      fileURLToPath(new URL("./__fixtures__/inter-card-pdf-text.txt", import.meta.url)),
+    );
+    const parsed = parsePdfText({
+      text: new TextDecoder("utf-8").decode(bytes),
+      institution: "inter",
+      product: "CREDIT_CARD",
+    });
+
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.transactions).toHaveLength(20);
+    expect(parsed.rawRows[0]).toMatchObject({ cardLastFour: "5527" });
+    expect(parsed.rawRows[1]).toMatchObject({ cardLastFour: "7757" });
+    expect(parsed.rawRows.at(-1)).toMatchObject({ cardLastFour: "8466" });
+    expect(parsed.transactions[0]).toMatchObject({
+      occurredAt: "2025-12-21T03:00:00.000Z",
+      direction: "CREDIT",
+      nature: "CARD_PAYMENT",
+      amount: "3006.11",
+    });
+    expect(parsed.transactions[1]).toMatchObject({
+      occurredAt: "2025-09-02T03:00:00.000Z",
+      direction: "DEBIT",
+      nature: "CONSUMPTION",
+      installmentNumber: 5,
+      totalInstallments: 12,
+      amount: "175.00",
+    });
+    expect(parsed.transactions[4]).toMatchObject({
+      description: "APPLE.COM/BILL",
+      direction: "CREDIT",
+      nature: "REFUND",
+      amount: "3.65",
+    });
+    expect(parsed.transactions[18]).toMatchObject({
+      description: "IOF INTERNACIONAL",
+      nature: "INTEREST_FEE",
+      amount: "1.98",
     });
   });
 });

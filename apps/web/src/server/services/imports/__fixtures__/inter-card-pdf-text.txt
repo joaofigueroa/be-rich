@@ -1,0 +1,39 @@
+Resumo da fatura
+Olá, Cliente! A sua fatura chegou!
+Total da sua fatura
+R$ 2.504,45
+Data de Vencimento
+22/01/2026
+Despesas da fatura
+CARTÃO 5554****5527
+Data Movimentação Beneficiário Valor
+21 de dez. 2025 PAGAMENTO ON LINE - + R$ 3.006,11
+Total CARTÃO 5554****5527 R$ 0,00
+CARTÃO 5364****7757
+Data Movimentação Beneficiário Valor
+02 de set. 2025 PG *TREINUS TECNOLOGIA (Parcela 05 de 12) - R$ 175,00
+30 de set. 2025 AMAZON BR (Parcela 04 de 04) - R$ 36,03
+12 de nov. 2025 TAP WEB VIP (Parcela 03 de 10) - R$ 1.089,25
+26 de nov. 2025 APPLE.COM/BILL - + R$ 3,65
+28 de nov. 2025 AMAZON BR (Parcela 02 de 12) - R$ 233,25
+14 de dez. 2025 POP 14Dez 21h45min - R$ 56,90
+16 de dez. 2025 AMAZON BR - R$ 97,44
+18 de dez. 2025 EBN *SPOTIFY - R$ 23,90
+21 de dez. 2025 AMAZONMKTPLC*EXEMPLO - R$ 169,98
+27 de dez. 2025 APPLE.COM/BILL - R$ 49,90
+28 de dez. 2025 99Negocia 28Dez 21h31m - R$ 55,18
+07 de jan. 2026 AMAZON BR - R$ 70,78
+07 de jan. 2026 AMAZON BR - R$ 94,50
+08 de jan. 2026 DL*99 RIDE - R$ 49,20
+09 de jan. 2026 AMAZONMKTPLC*BOXPERFEI - R$ 79,96
+10 de jan. 2026 NETFLIX.COM - R$ 44,90
+13 de jan. 2026 GITHUB INC. S - R$ 56,45
+Valor e símbolo da moeda de origem: 10,00 USD
+Valor em dólar americano: $ 10,00
+Cotação do dólar americano: R$ 5,6447
+14 de jan. 2026 IOF INTERNACIONAL - R$ 1,98
+Total CARTÃO 5364****7757 R$ 2.384,60
+CARTÃO 5554****8466
+Data Movimentação Beneficiário Valor
+05 de ago. 2025 WOLRD TENNIS BOTAFOG (Parcela 06 de 10) - R$ 123,50
+Total CARTÃO 5554****8466 R$ 123,50

@@ -87,4 +87,46 @@ describe("buildReportChartData", () => {
     ]);
     expect(data.timeline[0]).toMatchObject({ consumption: 500, cashFlow: -500 });
   });
+
+  it("mantém aportes e resgates visíveis no gráfico de categorias sem alterar consumo", () => {
+    const data = buildReportChartData([
+      {
+        id: "investment-1",
+        occurredAt: new Date("2026-01-10T00:00:00.000Z"),
+        postedAt: new Date("2026-01-10T00:00:00.000Z"),
+        direction: "DEBIT",
+        nature: "INVESTMENT_CONTRIBUTION",
+        amountInBase: "1200",
+        description: "Aplicação CDB",
+        account: "Inter",
+        institution: "Inter",
+        category: null,
+        accountType: "CHECKING",
+      },
+      {
+        id: "investment-2",
+        occurredAt: new Date("2026-01-15T00:00:00.000Z"),
+        postedAt: new Date("2026-01-15T00:00:00.000Z"),
+        direction: "CREDIT",
+        nature: "INVESTMENT_REDEMPTION",
+        amountInBase: "300",
+        description: "Resgate investimento",
+        account: "Inter",
+        institution: "Inter",
+        category: "Investimentos",
+        accountType: "CHECKING",
+      },
+    ]);
+
+    expect(data.timeline[0]).toMatchObject({ consumption: 0, cashFlow: -900 });
+    expect(data.categories).toEqual([
+      { category: "Aportes em investimentos", amount: 1200 },
+      { category: "Investimentos", amount: 300 },
+    ]);
+    expect(
+      data.categoryDetails.find((detail) => detail.category === "Aportes em investimentos"),
+    ).toMatchObject({
+      transactions: [{ id: "investment-1", description: "Aplicação CDB" }],
+    });
+  });
 });

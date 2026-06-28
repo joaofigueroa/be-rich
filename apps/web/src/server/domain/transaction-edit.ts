@@ -15,6 +15,12 @@ export type TransactionNature = (typeof TRANSACTION_NATURES)[number];
 
 export function categoryTypeForNature(nature: TransactionNature) {
   if (nature === "INCOME") return "INCOME" as const;
-  if (nature === "CONSUMPTION") return "EXPENSE" as const;
+  if (
+    nature === "CONSUMPTION" ||
+    nature === "INVESTMENT_CONTRIBUTION" ||
+    nature === "INVESTMENT_REDEMPTION"
+  ) {
+    return "EXPENSE" as const;
+  }
   return null;
 }

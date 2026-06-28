@@ -155,7 +155,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Consumo por categoria</CardTitle>
+            <CardTitle>Consumo e investimentos por categoria</CardTitle>
             <p className="text-sm text-muted-foreground">
               Clique em uma barra para ver as transações consideradas.
             </p>
@@ -166,7 +166,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
                 className="w-full"
                 style={{ height: categoryChartHeight }}
                 role="img"
-                aria-label="Gráfico de consumo por categoria"
+                aria-label="Gráfico de consumo e investimentos por categoria"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -195,7 +195,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Bar
                       dataKey="amount"
-                      name="Consumo"
+                      name="Consumo e investimentos"
                       fill="#15803d"
                       radius={[0, 5, 5, 0]}
                       cursor="pointer"
@@ -218,7 +218,7 @@ export function ReportCharts({ data }: { data: ReportChartData }) {
               </div>
             ) : (
               <div className="grid h-80 place-items-center text-sm text-muted-foreground">
-                Nenhum consumo categorizado no período.
+                Nenhum consumo ou investimento categorizado no período.
               </div>
             )}
           </CardContent>

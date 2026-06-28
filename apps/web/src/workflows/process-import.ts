@@ -29,11 +29,34 @@ export async function categorizeTransactionsStep(transactionIds: string[]) {
     const transaction = await getDb().query.transactions.findFirst({
       where: eq(schema.transactions.id, transactionId),
     });
-    if (!transaction || !["CONSUMPTION", "INCOME"].includes(transaction.nature)) {
+    if (
+      !transaction ||
+      !["CONSUMPTION", "INCOME", "INVESTMENT_CONTRIBUTION", "INVESTMENT_REDEMPTION"].includes(
+        transaction.nature,
+      )
+    ) {
       stats.skipped += 1;
       continue;
     }
     const categoryType = transaction.nature === "INCOME" ? "INCOME" : "EXPENSE";
+    if (
+      transaction.nature === "INVESTMENT_CONTRIBUTION" ||
+      transaction.nature === "INVESTMENT_REDEMPTION"
+    ) {
+      const investmentCategory = await getDb().query.categories.findFirst({
+        where: (category, { and, eq }) =>
+          and(
+            eq(category.workspaceId, transaction.workspaceId),
+            eq(category.active, true),
+            eq(category.systemKey, "expense.financial.0"),
+          ),
+      });
+      if (investmentCategory) {
+        await applyClassification(transaction.id, investmentCategory.id, "RULE", 1);
+        stats.classified += 1;
+        continue;
+      }
+    }
     const [rules, categories] = await Promise.all([
       getDb().query.categorizationRules.findMany({
         where: (rule, { and, eq }) =>
