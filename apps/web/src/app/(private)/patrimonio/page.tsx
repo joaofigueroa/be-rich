@@ -4,6 +4,7 @@ import { Input } from "@be-rich/ui/input";
 import { Label } from "@be-rich/ui/label";
 import { Building2, CreditCard, Landmark, PiggyBank, Wallet } from "lucide-react";
 import { recordAccountBalanceAction } from "@/app/balance-actions";
+import { FutureInstallmentsCard } from "@/components/future-installments-card";
 import { NetWorthBreakdownCard } from "@/components/net-worth-breakdown-card";
 import { PageHeading } from "@/components/page-heading";
 import { formatCurrency } from "@/lib/format";
@@ -29,12 +30,16 @@ export default async function NetWorthPage() {
         title="Patrimônio"
         description="Caixa, contas e investimentos menos faturas abertas e dívidas — sempre na moeda-base do espaço."
       />
-      <div className="mb-5">
+      <div className="mb-5 grid gap-4 lg:grid-cols-2">
         <NetWorthBreakdownCard
           value={formatCurrency(data.netWorth)}
           complete={data.netWorthComplete}
           items={data.netWorthBreakdown}
           accent
+        />
+        <FutureInstallmentsCard
+          total={data.futureInstallments.total}
+          items={data.futureInstallments.items}
         />
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
