@@ -72,7 +72,7 @@ export async function stageStatementImport(rawInput: z.input<typeof StageImportI
     filename: input.filename,
     fileHash,
     format: detectFormat(input.filename),
-    product: input.product,
+    product: parsed.product,
     parserKey: parsed.parserKey,
     parserVersion: parsed.parserVersion,
     warnings: parsed.warnings,

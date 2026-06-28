@@ -82,6 +82,7 @@ describe("Inter credit card PDF text", () => {
     });
 
     expect(parsed.warnings).toEqual([]);
+    expect(parsed.product).toBe("CREDIT_CARD");
     expect(parsed.transactions).toHaveLength(20);
     expect(parsed.rawRows[0]).toMatchObject({ cardLastFour: "5527" });
     expect(parsed.rawRows[1]).toMatchObject({ cardLastFour: "7757" });
@@ -110,6 +111,25 @@ describe("Inter credit card PDF text", () => {
       description: "IOF INTERNACIONAL",
       nature: "INTEREST_FEE",
       amount: "1.98",
+    });
+  });
+
+  it("detecta fatura Inter em PDF mesmo quando o produto selecionado é conta", async () => {
+    const bytes = await readFile(
+      fileURLToPath(new URL("./__fixtures__/inter-card-pdf-text.txt", import.meta.url)),
+    );
+    const parsed = parsePdfText({
+      text: new TextDecoder("utf-8").decode(bytes),
+      institution: "inter",
+      product: "ACCOUNT",
+    });
+
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.product).toBe("CREDIT_CARD");
+    expect(parsed.transactions).toHaveLength(20);
+    expect(parsed.transactions[0]).toMatchObject({
+      direction: "CREDIT",
+      nature: "CARD_PAYMENT",
     });
   });
 });

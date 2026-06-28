@@ -83,6 +83,21 @@ function cleanInterCardDescription(description: string) {
     .trim();
 }
 
+function inferPdfProduct(input: {
+  text: string;
+  institution: "nubank" | "inter" | "c6" | "mercado-pago" | "generic";
+  product: "ACCOUNT" | "CREDIT_CARD";
+}) {
+  if (
+    input.institution === "inter" &&
+    /Despesas da fatura/i.test(input.text) &&
+    /CARTÃO\s+\d{4}\*{4}\d{4}/i.test(input.text)
+  ) {
+    return "CREDIT_CARD" as const;
+  }
+  return input.product;
+}
+
 export function parsePdfText(input: {
   text: string;
   institution: "nubank" | "inter" | "c6" | "mercado-pago" | "generic";
@@ -94,6 +109,7 @@ export function parsePdfText(input: {
   const rawRows: Record<string, unknown>[] = [];
   const transactions = [];
   let currentCardLastFour: string | undefined;
+  const effectiveProduct = inferPdfProduct(input);
 
   for (const [index, rawLine] of logicalPdfLines(input.text).entries()) {
     const line = rawLine.replace(/\s+/g, " ").trim();
@@ -109,7 +125,7 @@ export function parsePdfText(input: {
     }
 
     const interMatch =
-      input.institution === "inter" && input.product === "CREDIT_CARD"
+      input.institution === "inter" && effectiveProduct === "CREDIT_CARD"
         ? line.match(interCardTransactionLine)
         : null;
     if (interMatch) {
@@ -124,7 +140,7 @@ export function parsePdfText(input: {
             description: cleanInterCardDescription(description),
             amount,
             currency: input.currency ?? "BRL",
-            product: input.product,
+            product: effectiveProduct,
             direction: sign === "+" ? "CREDIT" : "DEBIT",
             externalId: currentCardLastFour
               ? `${currentCardLastFour}:${date}:${description}:${amount}`
@@ -152,7 +168,7 @@ export function parsePdfText(input: {
           description,
           amount,
           currency: input.currency ?? "BRL",
-          product: input.product,
+          product: effectiveProduct,
         }),
       );
     } catch (error) {
@@ -166,7 +182,7 @@ export function parsePdfText(input: {
     );
   }
 
-  return { transactions, rawRows, warnings };
+  return { product: effectiveProduct, transactions, rawRows, warnings };
 }
 
 export const pdfStatementParser: StatementParser = {
@@ -181,7 +197,7 @@ export const pdfStatementParser: StatementParser = {
       input.password ? { password: input.password } : undefined,
     );
     const { text } = await extractText(document, { mergePages: true });
-    const { transactions, rawRows, warnings } = parsePdfText({
+    const { product, transactions, rawRows, warnings } = parsePdfText({
       text,
       institution: input.institution,
       product: input.product,
@@ -192,7 +208,7 @@ export const pdfStatementParser: StatementParser = {
       parserKey: `${this.key}:${input.institution}:${input.product.toLowerCase()}`,
       parserVersion: this.version,
       institution: input.institution,
-      product: input.product,
+      product,
       account: { currency: input.currency ?? "BRL" },
       transactions,
       rawRows,
