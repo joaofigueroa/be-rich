@@ -162,17 +162,18 @@ describe("Inter credit card PDF text", () => {
     });
   });
 
-  it("detecta fatura Inter em PDF mesmo quando o produto selecionado é conta", async () => {
+  it("detecta fatura Inter em PDF mesmo quando instituição e produto selecionados estão errados", async () => {
     const bytes = await readFile(
       fileURLToPath(new URL("./__fixtures__/inter-card-pdf-text.txt", import.meta.url)),
     );
     const parsed = parsePdfText({
       text: new TextDecoder("utf-8").decode(bytes),
-      institution: "inter",
+      institution: "nubank",
       product: "ACCOUNT",
     });
 
     expect(parsed.warnings).toEqual([]);
+    expect(parsed.institution).toBe("inter");
     expect(parsed.product).toBe("CREDIT_CARD");
     expect(parsed.transactions).toHaveLength(20);
     expect(parsed.transactions[0]).toMatchObject({

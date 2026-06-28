@@ -62,7 +62,7 @@ export async function stageStatementImport(rawInput: z.input<typeof StageImportI
 
   const fileHash = createHash("sha256").update(input.bytes).digest("hex");
   const institution = await getDb().query.institutions.findFirst({
-    where: (institution, { eq }) => eq(institution.slug, input.institution),
+    where: (institution, { eq }) => eq(institution.slug, parsed.institution),
   });
   const batch = await createStagedImport({
     workspaceId: input.workspaceId,
