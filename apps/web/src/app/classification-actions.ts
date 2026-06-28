@@ -18,8 +18,13 @@ export async function reprocessCategoriesAction() {
     where: (transaction, { and, eq, inArray }) =>
       and(
         inArray(transaction.workspaceId, workspaceIds),
-        inArray(transaction.nature, ["CONSUMPTION", "INCOME"]),
-        eq(transaction.classificationSource, "NONE"),
+        inArray(transaction.nature, [
+          "CONSUMPTION",
+          "INCOME",
+          "INVESTMENT_CONTRIBUTION",
+          "INVESTMENT_REDEMPTION",
+        ]),
+        eq(transaction.reviewStatus, "PENDING"),
       ),
     limit: 500,
   });

@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { eq, getDb, schema } from "@be-rich/database";
-import { classificationReviewStatus, matchRule } from "@/server/domain/classification";
+import {
+  classificationReviewStatus,
+  inferCategoryFromHistory,
+  matchRule,
+} from "@/server/domain/classification";
 import { categoryTypeForNature } from "@/server/domain/transaction-edit";
 import {
   ensureCreditCardBillForImport,
@@ -96,6 +100,22 @@ export async function categorizeTransactionsStep(transactionIds: string[]) {
       continue;
     }
 
+    const historicalCategory = await inferCategoryFromWorkspaceHistory({
+      transactionId: transaction.id,
+      workspaceId: transaction.workspaceId,
+      normalizedDescription: transaction.normalizedDescription,
+    });
+    if (historicalCategory) {
+      await applyClassification(
+        transaction.id,
+        historicalCategory.categoryId,
+        "RULE",
+        historicalCategory.confidence,
+      );
+      stats.classified += 1;
+      continue;
+    }
+
     const taxonomyVersion = createHash("sha256")
       .update(
         categories
@@ -179,6 +199,41 @@ async function applyClassification(
       updatedAt: new Date(),
     })
     .where(eq(schema.transactions.id, transactionId));
+}
+
+async function inferCategoryFromWorkspaceHistory(input: {
+  transactionId: string;
+  workspaceId: string;
+  normalizedDescription: string;
+}) {
+  const examples = await getDb().query.transactions.findMany({
+    columns: {
+      categoryId: true,
+      classificationSource: true,
+      reviewStatus: true,
+    },
+    where: (transaction, { and, eq, ne, isNotNull }) =>
+      and(
+        eq(transaction.workspaceId, input.workspaceId),
+        eq(transaction.normalizedDescription, input.normalizedDescription),
+        ne(transaction.id, input.transactionId),
+        isNotNull(transaction.categoryId),
+      ),
+    limit: 50,
+  });
+  return inferCategoryFromHistory(
+    examples.flatMap((example) =>
+      example.categoryId
+        ? [
+            {
+              categoryId: example.categoryId,
+              classificationSource: example.classificationSource,
+              reviewStatus: example.reviewStatus,
+            },
+          ]
+        : [],
+    ),
+  );
 }
 
 async function ensureReviewStateForFinancialNature(

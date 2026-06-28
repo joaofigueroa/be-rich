@@ -20,6 +20,12 @@ export type ClassificationRule = {
   priority: number;
 };
 
+export type HistoricalClassificationExample = {
+  categoryId: string;
+  classificationSource: "RULE" | "CACHE" | "AI" | "MANUAL" | "NONE";
+  reviewStatus: "NOT_REQUIRED" | "PENDING" | "CONFIRMED";
+};
+
 export function matchRule(input: {
   description: string;
   merchant?: string;
@@ -52,4 +58,40 @@ function safeRegex(pattern: string) {
 
 export function classificationReviewStatus(confidence: number, threshold = 0.85) {
   return confidence >= threshold ? "NOT_REQUIRED" : "PENDING";
+}
+
+export function inferCategoryFromHistory(
+  examples: HistoricalClassificationExample[],
+  minimumConfidence = 0.85,
+) {
+  const confidentExamples = examples.filter(
+    (example) =>
+      example.categoryId &&
+      example.classificationSource !== "NONE" &&
+      example.reviewStatus !== "PENDING",
+  );
+  if (!confidentExamples.length) return null;
+
+  const manualExamples = confidentExamples.filter(
+    (example) => example.classificationSource === "MANUAL",
+  );
+  const pool = manualExamples.length ? manualExamples : confidentExamples;
+  const counts = new Map<string, number>();
+  for (const example of pool) {
+    counts.set(example.categoryId, (counts.get(example.categoryId) ?? 0) + 1);
+  }
+  const ranked = [...counts.entries()].sort((left, right) => right[1] - left[1]);
+  const winner = ranked[0];
+  if (!winner) return null;
+  const [, winnerCount] = winner;
+  const total = pool.length;
+  const confidence = total === 1 ? 0.92 : winnerCount / total;
+  if (confidence < minimumConfidence) return null;
+
+  return {
+    categoryId: winner[0],
+    confidence,
+    sampleSize: total,
+    usedManualExamples: manualExamples.length > 0,
+  };
 }
