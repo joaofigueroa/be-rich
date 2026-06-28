@@ -15,6 +15,7 @@ export async function getDashboardSnapshot(userId: string) {
       workspaceIds,
       accounts: [],
       accountBalances: {},
+      netWorthBreakdown: [],
       goals: [],
       recent: [],
       totals: calculateReportTotals([]),
@@ -101,11 +102,52 @@ export async function getDashboardSnapshot(userId: string) {
     .filter((account) => account.type === "DEBT")
     .map((account) => latestBalances.get(account.id)?.balanceInBase ?? "0");
   const bills = openBills.map((bill) => bill.total);
+  const netWorthBreakdown = [
+    ...visibleAccounts
+      .filter((account) => account.type !== "DEBT" && account.type !== "INVESTMENT")
+      .map((account) => ({
+        id: account.id,
+        kind: "ASSET" as const,
+        group: "Caixa e contas",
+        label: account.name,
+        detail: `${account.type} · ${account.currency}`,
+        amount: latestBalances.get(account.id)?.balanceInBase ?? "0",
+      })),
+    ...visibleAccounts
+      .filter((account) => account.type === "INVESTMENT")
+      .map((account) => ({
+        id: account.id,
+        kind: "ASSET" as const,
+        group: "Investimentos",
+        label: account.name,
+        detail: `${account.type} · ${account.currency}`,
+        amount: latestBalances.get(account.id)?.balanceInBase ?? "0",
+      })),
+    ...openBills.map((bill, index) => ({
+      id: `bill-${index}-${bill.total}`,
+      kind: "LIABILITY" as const,
+      group: "Faturas abertas",
+      label: "Fatura de cartão em aberto",
+      detail: "Passivo considerado no patrimônio líquido",
+      amount: bill.total,
+    })),
+    ...visibleAccounts
+      .filter((account) => account.type === "DEBT")
+      .map((account) => ({
+        id: account.id,
+        kind: "LIABILITY" as const,
+        group: "Dívidas",
+        label: account.name,
+        detail: `${account.type} · ${account.currency}`,
+        amount: latestBalances.get(account.id)?.balanceInBase ?? "0",
+      })),
+  ];
 
   return {
     workspaceIds,
     accounts: visibleAccounts,
     accountBalances: Object.fromEntries(latestBalances),
+    netWorthBreakdown,
     goals,
     recent: transactions.slice(0, 8),
     totals: calculateReportTotals(transactions),

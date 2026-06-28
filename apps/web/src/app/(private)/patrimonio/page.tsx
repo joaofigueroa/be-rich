@@ -4,6 +4,7 @@ import { Input } from "@be-rich/ui/input";
 import { Label } from "@be-rich/ui/label";
 import { Building2, CreditCard, Landmark, PiggyBank, Wallet } from "lucide-react";
 import { recordAccountBalanceAction } from "@/app/balance-actions";
+import { NetWorthBreakdownCard } from "@/components/net-worth-breakdown-card";
 import { PageHeading } from "@/components/page-heading";
 import { formatCurrency } from "@/lib/format";
 import { requireUser } from "@/server/services/auth/session-service";
@@ -28,19 +29,14 @@ export default async function NetWorthPage() {
         title="Patrimônio"
         description="Caixa, contas e investimentos menos faturas abertas e dívidas — sempre na moeda-base do espaço."
       />
-      <Card className="mb-5 border-emerald-500/20 bg-emerald-500/[0.06]">
-        <CardContent className="p-6">
-          <p className="text-sm text-muted-foreground">Patrimônio líquido consolidado</p>
-          <p className="tabular mt-2 text-4xl font-semibold tracking-[-0.045em]">
-            {data.netWorthComplete ? formatCurrency(data.netWorth) : "—"}
-          </p>
-          {!data.netWorthComplete ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Informe o saldo atual de todas as contas para calcular o patrimônio sem estimativas.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className="mb-5">
+        <NetWorthBreakdownCard
+          value={formatCurrency(data.netWorth)}
+          complete={data.netWorthComplete}
+          items={data.netWorthBreakdown}
+          accent
+        />
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.accounts.map((account) => {
           const Icon = icons[account.type];

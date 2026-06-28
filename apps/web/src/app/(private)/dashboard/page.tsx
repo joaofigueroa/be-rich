@@ -1,17 +1,10 @@
 import { Badge } from "@be-rich/ui/badge";
 import { Button } from "@be-rich/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@be-rich/ui/card";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Landmark,
-  Plus,
-  Sparkles,
-  Target,
-  Upload,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Plus, Sparkles, Target, Upload } from "lucide-react";
 import Link from "next/link";
 import { AccountCreateDialog } from "@/components/account-create-dialog";
+import { NetWorthBreakdownCard } from "@/components/net-worth-breakdown-card";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/server/services/auth/session-service";
 import { getDashboardSnapshot } from "@/server/services/reports/dashboard-service";
@@ -46,11 +39,12 @@ export default async function DashboardPage() {
       </div>
       {!hasData ? <Onboarding /> : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Patrimônio líquido"
+        <NetWorthBreakdownCard
           value={data.netWorthComplete ? formatCurrency(data.netWorth) : "Saldo incompleto"}
-          icon={<Landmark className="size-4" />}
+          complete={data.netWorthComplete}
+          items={data.netWorthBreakdown}
           accent
+          compact
         />
         <MetricCard
           label="Receitas · 30 dias"
