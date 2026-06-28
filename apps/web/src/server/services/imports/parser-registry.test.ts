@@ -70,6 +70,54 @@ describe("Inter account CSV with metadata preamble", () => {
   });
 });
 
+describe("C6 account CSV with metadata preamble and split amount columns", () => {
+  it("mantém o layout específico do C6 isolado por banco", async () => {
+    const bytes = await readFile(
+      fileURLToPath(new URL("./__fixtures__/c6-account-with-preamble.csv", import.meta.url)),
+    );
+    const parsed = await parseStatement({
+      bytes,
+      filename: "c6-account-with-preamble.csv",
+      contentType: "text/csv",
+      institution: "c6",
+      product: "ACCOUNT",
+    });
+
+    expect(parsed.parserKey).toBe("delimited-csv:c6-account");
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.transactions).toHaveLength(6);
+    expect(parsed.account).toMatchObject({ name: "Conta 396063489", lastFour: "3489" });
+    expect(parsed.period).toEqual({ start: "2026-01-01", end: "2026-06-27" });
+    expect(parsed.transactions[0]).toMatchObject({
+      description: "SEGURO CONTA C6 · Seguro Conta",
+      direction: "DEBIT",
+      amount: "10.00",
+    });
+    expect(parsed.transactions[1]).toMatchObject({
+      direction: "CREDIT",
+      amount: "3555.00",
+    });
+    expect(parsed.transactions[2]).toMatchObject({
+      description: "PGTO FAT CARTAO C6 · Fatura de cartao",
+      nature: "CARD_PAYMENT",
+      direction: "DEBIT",
+      amount: "3554.76",
+    });
+    expect(parsed.transactions[4]).toMatchObject({
+      description: "Aplicação · CDB C6 LIM.GARANT.",
+      nature: "INVESTMENT_CONTRIBUTION",
+      direction: "DEBIT",
+      amount: "4000.00",
+    });
+    expect(parsed.transactions[5]).toMatchObject({
+      description: "Resgate · CDB C6 LIM. GARANT.",
+      nature: "INVESTMENT_REDEMPTION",
+      direction: "CREDIT",
+      amount: "110.09",
+    });
+  });
+});
+
 describe("Inter credit card PDF text", () => {
   it("reconhece linhas com meses por extenso, cartões adicionais e créditos", async () => {
     const bytes = await readFile(

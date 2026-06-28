@@ -26,6 +26,21 @@ async function insertImportRows(batchId: string, rows: StagedImportRow[]) {
     );
 }
 
+function hasUsableImportedData(batch: {
+  status: string;
+  totalRows: number;
+  validRows: number;
+  importedRows: number;
+}) {
+  if (["UPLOADED", "PARSING", "REVIEW", "FAILED", "CANCELLED"].includes(batch.status)) {
+    return false;
+  }
+  if (batch.status === "COMPLETED") {
+    return batch.totalRows > 0 && batch.validRows > 0 && batch.importedRows > 0;
+  }
+  return true;
+}
+
 export async function createStagedImport(input: {
   workspaceId: string;
   accountId?: string;
@@ -74,7 +89,7 @@ export async function createStagedImport(input: {
       ),
     });
     if (!existingBatch) return undefined;
-    if (!["UPLOADED", "PARSING", "REVIEW", "FAILED", "CANCELLED"].includes(existingBatch.status)) {
+    if (hasUsableImportedData(existingBatch)) {
       return existingBatch;
     }
 

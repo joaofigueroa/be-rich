@@ -3,7 +3,7 @@ import "server-only";
 import { parse as parseCsv } from "csv-parse/sync";
 import ExcelJS from "exceljs";
 import type { NormalizedTransaction } from "@/types/financial";
-import { createNormalizedTransaction, parseStatementDate } from "./parser-utils";
+import { createNormalizedTransaction, parseMoney, parseStatementDate } from "./parser-utils";
 import type { ParsedStatement, StatementParseInput, StatementParser } from "./statement-parser";
 
 const aliases = {
@@ -157,6 +157,149 @@ function rowsFromDelimitedText(text: string, delimiter: "," | ";") {
   };
 }
 
+function isC6AccountHeaderRow(row: readonly unknown[]) {
+  return (
+    rowHasAlias(row, ["data lancamento"]) &&
+    rowHasAlias(row, ["data contabil"]) &&
+    rowHasAlias(row, ["titulo"]) &&
+    rowHasAlias(row, ["entrada(r$)", "entrada"]) &&
+    rowHasAlias(row, ["saida(r$)", "saida"])
+  );
+}
+
+function c6AccountMetadataFromRows(metadataRows: unknown[][]) {
+  const metadataText = metadataRows
+    .map((row) => row.map((cell) => String(cell ?? "")).join(" "))
+    .join("\n");
+  const accountMatch = metadataText.match(/Conta:\s*([0-9.-]+)/i);
+  const periodMatch = metadataText.match(
+    /Extrato\s+de\s+(\d{2}\/\d{2}\/\d{4})\s+a\s+(\d{2}\/\d{2}\/\d{4})/i,
+  );
+
+  return {
+    ...(accountMatch?.[1]
+      ? {
+          accountName: `Conta ${accountMatch[1]}`,
+          lastFour: accountMatch[1].replace(/\D/g, "").slice(-4),
+        }
+      : {}),
+    ...(periodMatch?.[1] && periodMatch?.[2]
+      ? {
+          period: {
+            start: parseStatementDate(periodMatch[1]).slice(0, 10),
+            end: parseStatementDate(periodMatch[2]).slice(0, 10),
+          },
+        }
+      : {}),
+  };
+}
+
+function c6Description(row: Record<string, unknown>, direction: "CREDIT" | "DEBIT") {
+  const titleKey = findKey(row, ["titulo", "título"]);
+  const descriptionKey = findKey(row, ["descricao", "descrição"]);
+  const title = titleKey ? String(row[titleKey] ?? "").trim() : "";
+  const description = descriptionKey ? String(row[descriptionKey] ?? "").trim() : "";
+  const base =
+    title && description && canonical(title) !== canonical(description)
+      ? `${title} · ${description}`
+      : title || description;
+
+  if (/^CDB\b/i.test(base)) {
+    return direction === "CREDIT" ? `Resgate · ${base}` : `Aplicação · ${base}`;
+  }
+  return base;
+}
+
+function parseC6AccountRows(
+  rows: Record<string, unknown>[],
+  input: StatementParseInput,
+  firstDataLine: number,
+) {
+  const warnings: string[] = [];
+  const transactions: NormalizedTransaction[] = [];
+
+  rows.forEach((row, index) => {
+    try {
+      const date = pick(row, "date", input.mapping);
+      const postedDate = pick(row, "postedDate", input.mapping);
+      const entradaKey = findKey(row, ["entrada(r$)", "entrada"]);
+      const saidaKey = findKey(row, ["saida(r$)", "saída(r$)", "saida", "saída"]);
+      const entrada = parseMoney(entradaKey ? row[entradaKey] : 0);
+      const saida = parseMoney(saidaKey ? row[saidaKey] : 0);
+      const direction = entrada.gt(0) ? "CREDIT" : "DEBIT";
+      const amount = entrada.gt(0) ? entrada : saida;
+      const description = c6Description(row, direction);
+
+      if (date === undefined || !description || amount.lte(0)) {
+        throw new Error("Required C6 columns were not detected");
+      }
+      transactions.push(
+        createNormalizedTransaction({
+          date,
+          postedDate,
+          description,
+          amount: amount.toFixed(2),
+          currency: input.currency ?? "BRL",
+          product: input.product,
+          direction,
+        }),
+      );
+    } catch (error) {
+      warnings.push(
+        `Linha ${firstDataLine + index}: ${error instanceof Error ? error.message : "falha de leitura"}`,
+      );
+    }
+  });
+  return { transactions, warnings };
+}
+
+function parseC6AccountStatement(
+  input: StatementParseInput,
+  text: string,
+  delimiter: "," | ";",
+): ParsedStatement | null {
+  if (input.institution !== "c6" || input.product !== "ACCOUNT") return null;
+  const table = parseCsv(text, {
+    columns: false,
+    skip_empty_lines: false,
+    delimiter,
+    relax_column_count: true,
+    trim: true,
+  }) as unknown[][];
+  const headerIndex = table.findIndex(isC6AccountHeaderRow);
+  if (headerIndex === -1) return null;
+  const headerRow = table[headerIndex];
+  if (!headerRow) throw new Error("Header row could not be read");
+  const headers = headerRow.map((cell) => String(cell ?? "").trim());
+  const rows = table
+    .slice(headerIndex + 1)
+    .filter((row) => row.some((cell) => String(cell ?? "").trim()))
+    .map((row) =>
+      Object.fromEntries(
+        headers.flatMap((header, index) => (header ? [[header, row[index]]] : [])),
+      ),
+    );
+  const firstDataLine = headerIndex + 2;
+  const { transactions, warnings } = parseC6AccountRows(rows, input, firstDataLine);
+  const metadata = c6AccountMetadataFromRows(table.slice(0, headerIndex));
+
+  return {
+    parserKey: "delimited-csv:c6-account",
+    parserVersion: "1.2.0",
+    institution: input.institution,
+    product: input.product,
+    account: {
+      currency: input.currency ?? "BRL",
+      ...(metadata.accountName ? { name: metadata.accountName } : {}),
+      ...(metadata.lastFour ? { lastFour: metadata.lastFour } : {}),
+    },
+    ...(metadata.period ? { period: metadata.period } : {}),
+    transactions,
+    rawRows: rows,
+    warnings,
+  };
+}
+
 function parsePeriod(value: unknown) {
   const match = String(value ?? "").match(/(\d{2}\/\d{2}\/\d{4})\s+a\s+(\d{2}\/\d{2}\/\d{4})/i);
   if (!match) return undefined;
@@ -227,6 +370,8 @@ export const csvStatementParser: StatementParser = {
   async parse(input) {
     const text = new TextDecoder("utf-8").decode(input.bytes).replace(/^\uFEFF/, "");
     const delimiter = detectDelimiter(text);
+    const c6AccountStatement = parseC6AccountStatement(input, text, delimiter);
+    if (c6AccountStatement) return c6AccountStatement;
     const { rows, firstDataLine, metadataRows } = rowsFromDelimitedText(text, delimiter);
     return result(input, rows, this.key, { firstDataLine, metadataRows });
   },
